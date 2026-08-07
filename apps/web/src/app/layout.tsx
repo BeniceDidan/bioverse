@@ -25,13 +25,32 @@ const roboto = Roboto({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_DESCRIPTION =
+  "Platform pembelajaran biologi interaktif untuk materi Jaringan Hewan — dengan Virtual Microscope, AI Tutor, video, dan kuis interaktif.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "BioVerse — Interactive Biology Learning Platform",
     template: "%s | BioVerse",
   },
-  description:
-    "Platform pembelajaran biologi interaktif untuk materi Jaringan Hewan — dengan Virtual Microscope, AI Tutor, video, dan kuis interaktif.",
+  description: SITE_DESCRIPTION,
+  keywords: ["jaringan hewan", "biologi", "virtual microscope", "belajar biologi", "AI tutor biologi", "kuis biologi"],
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "BioVerse",
+    title: "BioVerse — Interactive Biology Learning Platform",
+    description: SITE_DESCRIPTION,
+    images: ["/images/cell-illustration.webp"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BioVerse — Interactive Biology Learning Platform",
+    description: SITE_DESCRIPTION,
+    images: ["/images/cell-illustration.webp"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
