@@ -12,7 +12,7 @@ import {
   Video as VideoIcon,
   ListTodo,
 } from "lucide-react";
-import { apiServerGet } from "@/lib/api-server";
+import { apiServerGet, apiServerGetWithStatus } from "@/lib/api-server";
 import type { MaterialSectionDetail, MaterialWithSections } from "@/lib/materi-types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,11 +20,15 @@ import { MarkdownContent } from "@/components/materi/markdown-content";
 import { MateriActions } from "@/components/materi/materi-actions";
 
 async function getData(slug: string) {
-  const [sectionData, materialData] = await Promise.all([
-    apiServerGet<{ section: MaterialSectionDetail }>(`/api/materials/sections/${slug}`),
+  const [sectionResult, materialData] = await Promise.all([
+    apiServerGetWithStatus<{ section: MaterialSectionDetail }>(`/api/materials/sections/${slug}`),
     apiServerGet<{ material: MaterialWithSections }>("/api/materials"),
   ]);
-  return { section: sectionData?.section ?? null, material: materialData?.material ?? null };
+  return {
+    section: sectionResult.data?.section ?? null,
+    sectionStatus: sectionResult.status,
+    material: materialData?.material ?? null,
+  };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -35,9 +39,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function MateriDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { section, material } = await getData(slug);
+  const { section, sectionStatus, material } = await getData(slug);
 
-  if (!section) notFound();
+  // Only 404 when the API genuinely has no such section. A cold/slow API
+  // (free-tier instance waking up) must not be mistaken for "doesn't exist".
+  if (sectionStatus === "not_found") notFound();
+
+  if (!section) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-24 text-center">
+        <h1 className="font-heading text-2xl font-bold text-foreground">Gagal memuat materi</h1>
+        <p className="mt-3 text-muted-foreground">
+          Server sedang menyala kembali setelah tidak ada aktivitas. Coba muat ulang halaman ini dalam beberapa
+          detik.
+        </p>
+        <Link href="/materi" className="mt-6 inline-block text-sm font-medium text-primary hover:underline">
+          ← Kembali ke daftar materi
+        </Link>
+      </div>
+    );
+  }
 
   const sections = material?.sections ?? [];
   const currentIndex = sections.findIndex((s) => s.slug === slug);
