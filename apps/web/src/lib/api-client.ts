@@ -1,8 +1,6 @@
 import type { ApiResponse, AuthUser } from "@bioverse/shared";
 import { useAuthStore } from "./auth-store";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-
 export class ApiClientError extends Error {
   status: number;
   errors?: Record<string, string[]>;
@@ -27,13 +25,18 @@ async function rawRequest<T>(path: string, options: RequestOptions = {}): Promis
   const headers = new Headers(options.headers);
   if (!isFormData) headers.set("Content-Type", "application/json");
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-  // The web app and API are on different origins, so the frontend can never
-  // read the csrf_token cookie directly (cookies aren't visible cross-origin
-  // via document.cookie) — the server hands the value back in the
-  // login/register/refresh response body instead, and we hold onto it here.
+  // Sent from memory rather than read back off the csrf_token cookie — kept
+  // that way even now that requests are proxied same-origin (see
+  // next.config.ts), so this keeps working regardless of routing changes.
   if (isMutating && csrfToken) headers.set("x-csrf-token", csrfToken);
 
-  const res = await fetch(`${API_URL}${path}`, {
+  // Requests go to the web app's own origin and are proxied server-side to
+  // the API (see the rewrite in next.config.ts). This makes session/CSRF
+  // cookies first-party, so they aren't dropped by browsers that block
+  // third-party cookies (Safari does this unconditionally, regardless of
+  // SameSite — that was silently breaking login persistence and any
+  // CSRF-protected action for anyone not on Chrome).
+  const res = await fetch(path, {
     ...options,
     headers,
     credentials: "include",

@@ -16,11 +16,14 @@ export function createApp() {
   const app = express();
 
   app.disable("x-powered-by");
-  // Render puts exactly one reverse proxy in front of the app. Without this,
-  // Express treats every request as coming from that proxy's IP, which
-  // collapses everyone behind it (e.g. a whole school's shared network)
-  // into a single express-rate-limit bucket instead of limiting per client.
-  app.set("trust proxy", 1);
+  // Requests arrive through two reverse proxies in front of the app: Vercel's
+  // edge (which now proxies /api/* same-origin from the web app, see
+  // apps/web/next.config.ts) and Render's own load balancer. Without telling
+  // Express how many hops to trust, it treats every request as coming from
+  // the nearest proxy's IP, which collapses everyone behind them (e.g. a
+  // whole school's shared network) into a single express-rate-limit bucket
+  // instead of limiting per real client.
+  app.set("trust proxy", 2);
   app.use(helmetMiddleware);
   app.use(corsMiddleware);
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
