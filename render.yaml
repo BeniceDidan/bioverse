@@ -20,3 +20,5 @@ services:
         sync: false
       - key: WEB_ORIGIN
         sync: false
+      - key: TEACHER_ALLOWLIST_EMAILS
+        sync: false

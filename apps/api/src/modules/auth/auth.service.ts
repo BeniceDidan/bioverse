@@ -4,7 +4,16 @@ import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/ApiError";
 import { hashPassword, verifyPassword } from "../../utils/password";
 import { generateRefreshToken, hashToken, signAccessToken } from "../../utils/jwt";
+import { env } from "../../config/env";
 import crypto from "node:crypto";
+
+// When an allowlist is configured, only those emails may ever become TEACHER —
+// everyone else is registered as STUDENT regardless of what the client requests.
+// An empty allowlist (e.g. local dev) leaves the requested role unrestricted.
+function resolveRegistrationRole(input: RegisterInput): "STUDENT" | "TEACHER" {
+  if (env.teacherAllowlist.length === 0) return input.role;
+  return env.teacherAllowlist.includes(input.email.toLowerCase()) ? "TEACHER" : "STUDENT";
+}
 
 function refreshExpiry(): Date {
   return new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
@@ -25,14 +34,15 @@ export async function registerUser(input: RegisterInput) {
   if (existing) throw ApiError.conflict("Email sudah terdaftar");
 
   const passwordHash = await hashPassword(input.password);
+  const role = resolveRegistrationRole(input);
 
   const user = await prisma.user.create({
     data: {
       name: input.name,
       email: input.email,
       passwordHash,
-      role: input.role,
-      ...(input.role === "STUDENT"
+      role,
+      ...(role === "STUDENT"
         ? { studentProfile: { create: { school: input.school, grade: input.grade } } }
         : { teacherProfile: { create: { school: input.school, subject: input.grade } } }),
     },

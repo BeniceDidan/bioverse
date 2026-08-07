@@ -17,4 +17,8 @@ export const env = {
   jwtRefreshSecret: required("JWT_REFRESH_SECRET"),
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   isProduction: process.env.NODE_ENV === "production",
+  teacherAllowlist: (process.env.TEACHER_ALLOWLIST_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
 };

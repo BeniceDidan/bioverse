@@ -6,13 +6,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, type RegisterInput, type AuthUser } from "@bioverse/shared";
 import { useState } from "react";
-import { AlertCircle, CheckCircle2, GraduationCap, School } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { PasswordInput } from "@/components/auth/password-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/auth-store";
 
@@ -25,15 +24,11 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", password: "", role: "STUDENT", school: "", grade: "" },
   });
-
-  const role = watch("role");
 
   async function onSubmit(values: RegisterInput) {
     setServerError(null);
@@ -74,30 +69,6 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          {(
-            [
-              { value: "STUDENT", label: "Siswa", icon: GraduationCap },
-              { value: "TEACHER", label: "Guru", icon: School },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setValue("role", opt.value)}
-              className={cn(
-                "flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-medium transition-colors",
-                role === opt.value
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <opt.icon className="size-5" />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
         <div className="space-y-1.5">
           <Label htmlFor="name">Nama Lengkap</Label>
           <Input id="name" placeholder="Nama lengkap kamu" {...register("name")} />
@@ -116,8 +87,8 @@ export default function RegisterPage() {
             <Input id="school" placeholder="SMA Negeri 1" {...register("school")} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="grade">{role === "TEACHER" ? "Mapel" : "Kelas"}</Label>
-            <Input id="grade" placeholder={role === "TEACHER" ? "Biologi" : "XI IPA 1"} {...register("grade")} />
+            <Label htmlFor="grade">Kelas</Label>
+            <Input id="grade" placeholder="XI IPA 1" {...register("grade")} />
           </div>
         </div>
 
