@@ -94,12 +94,6 @@ export default function LoginPage() {
         <Button type="submit" className="w-full" size="lg" loading={isSubmitting}>
           Masuk
         </Button>
-
-        <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
-          <p className="font-medium text-foreground">Akun demo:</p>
-          <p>Siswa — siswa.demo@bioverse.id / Demo1234!</p>
-          <p>Guru — guru.demo@bioverse.id / Demo1234!</p>
-        </div>
       </form>
     </AuthShell>
   );
