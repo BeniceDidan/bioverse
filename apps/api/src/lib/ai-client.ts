@@ -1,16 +1,25 @@
-import { GoogleGenAI } from "@google/genai";
 import { env } from "../config/env";
 
 export const AI_MODEL = "gemini-flash-latest";
 
-export const genAI = env.geminiApiKey ? new GoogleGenAI({ apiKey: env.geminiApiKey }) : null;
+// Untyped: @google/genai is ESM-only, statically importing its types from this
+// CommonJS module requires a resolution-mode attribute TS won't emit for .ts files.
+let clientPromise: Promise<any> | null = null;
+
+function getClient(): Promise<any> {
+  if (!clientPromise) {
+    clientPromise = import("@google/genai").then(({ GoogleGenAI }) => new GoogleGenAI({ apiKey: env.geminiApiKey }));
+  }
+  return clientPromise;
+}
 
 export function isAiConfigured() {
-  return genAI !== null;
+  return !!env.geminiApiKey;
 }
 
 export async function generateJson(systemInstruction: string, userPrompt: string): Promise<string> {
-  if (!genAI) throw new Error("AI belum dikonfigurasi");
+  if (!isAiConfigured()) throw new Error("AI belum dikonfigurasi");
+  const genAI = await getClient();
 
   const response = await genAI.models.generateContent({
     model: AI_MODEL,
@@ -30,7 +39,8 @@ export interface ChatTurn {
 }
 
 export async function generateChatReply(systemInstruction: string, history: ChatTurn[]): Promise<string> {
-  if (!genAI) throw new Error("AI belum dikonfigurasi");
+  if (!isAiConfigured()) throw new Error("AI belum dikonfigurasi");
+  const genAI = await getClient();
 
   const response = await genAI.models.generateContent({
     model: AI_MODEL,
