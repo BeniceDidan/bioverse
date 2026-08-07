@@ -33,8 +33,11 @@ export default function LoginPage() {
   async function onSubmit(values: LoginInput) {
     setServerError(null);
     try {
-      const data = await apiClient.post<{ user: AuthUser; accessToken: string }>("/api/auth/login", values);
-      setSession(data.user, data.accessToken);
+      const data = await apiClient.post<{ user: AuthUser; accessToken: string; csrfToken: string }>(
+        "/api/auth/login",
+        values
+      );
+      setSession(data.user, data.accessToken, data.csrfToken);
       setSuccess(true);
       setTimeout(() => router.push("/"), 600);
     } catch (err) {

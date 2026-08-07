@@ -7,13 +7,13 @@ import * as authService from "./auth.service";
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const { user, accessToken, refreshToken, csrfToken } = await authService.registerUser(req.body);
   setSessionCookies(res, refreshToken, csrfToken);
-  res.status(201).json({ success: true, data: { user, accessToken } });
+  res.status(201).json({ success: true, data: { user, accessToken, csrfToken } });
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { user, accessToken, refreshToken, csrfToken } = await authService.loginUser(req.body);
   setSessionCookies(res, refreshToken, csrfToken);
-  res.status(200).json({ success: true, data: { user, accessToken } });
+  res.status(200).json({ success: true, data: { user, accessToken, csrfToken } });
 });
 
 export const refresh = asyncHandler(async (req: Request, res: Response) => {
@@ -22,7 +22,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
 
   const { user, accessToken, refreshToken, csrfToken } = await authService.rotateRefreshToken(rawToken);
   setSessionCookies(res, refreshToken, csrfToken);
-  res.status(200).json({ success: true, data: { user, accessToken } });
+  res.status(200).json({ success: true, data: { user, accessToken, csrfToken } });
 });
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {

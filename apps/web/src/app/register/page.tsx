@@ -33,8 +33,11 @@ export default function RegisterPage() {
   async function onSubmit(values: RegisterInput) {
     setServerError(null);
     try {
-      const data = await apiClient.post<{ user: AuthUser; accessToken: string }>("/api/auth/register", values);
-      setSession(data.user, data.accessToken);
+      const data = await apiClient.post<{ user: AuthUser; accessToken: string; csrfToken: string }>(
+        "/api/auth/register",
+        values
+      );
+      setSession(data.user, data.accessToken, data.csrfToken);
       setSuccess(true);
       setTimeout(() => router.push("/"), 600);
     } catch (err) {

@@ -14,18 +14,12 @@ export class ApiClientError extends Error {
   }
 }
 
-function readCookie(name: string): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : undefined;
-}
-
 interface RequestOptions extends RequestInit {
   skipAuthRetry?: boolean;
 }
 
 async function rawRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { accessToken } = useAuthStore.getState();
+  const { accessToken, csrfToken } = useAuthStore.getState();
   const isMutating = !["GET", "HEAD", "OPTIONS"].includes(options.method ?? "GET");
 
   const isFormData = options.body instanceof FormData;
@@ -33,10 +27,11 @@ async function rawRequest<T>(path: string, options: RequestOptions = {}): Promis
   const headers = new Headers(options.headers);
   if (!isFormData) headers.set("Content-Type", "application/json");
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-  if (isMutating) {
-    const csrf = readCookie("csrf_token");
-    if (csrf) headers.set("x-csrf-token", csrf);
-  }
+  // The web app and API are on different origins, so the frontend can never
+  // read the csrf_token cookie directly (cookies aren't visible cross-origin
+  // via document.cookie) — the server hands the value back in the
+  // login/register/refresh response body instead, and we hold onto it here.
+  if (isMutating && csrfToken) headers.set("x-csrf-token", csrfToken);
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -72,11 +67,11 @@ async function tryRefresh(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const data = await rawRequest<{ user: AuthUser; accessToken: string }>("/api/auth/refresh", {
-          method: "POST",
-          skipAuthRetry: true,
-        });
-        useAuthStore.getState().setSession(data.user, data.accessToken);
+        const data = await rawRequest<{ user: AuthUser; accessToken: string; csrfToken: string }>(
+          "/api/auth/refresh",
+          { method: "POST", skipAuthRetry: true }
+        );
+        useAuthStore.getState().setSession(data.user, data.accessToken, data.csrfToken);
         return true;
       } catch {
         return false;
