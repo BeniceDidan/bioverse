@@ -20,12 +20,13 @@ teacherQuizRouter.delete("/questions/:questionId", csrfProtection, quizControlle
 
 export const quizRouter = Router();
 
-quizRouter.use(requireAuth);
-
+// Listing/viewing published quizzes is public (server-rendered without a
+// session, same as materi/microscope/video) — only attempts need to know
+// who's taking the quiz.
 quizRouter.get("/quizzes", quizController.listPublicQuizzes);
 quizRouter.get("/quizzes/:id", quizController.getPublicQuiz);
-quizRouter.get("/quizzes/:id/attempts", quizController.listMyAttempts);
-quizRouter.post("/quizzes/:id/attempts", csrfProtection, quizController.startAttempt);
-quizRouter.post("/attempts/:id/answers", csrfProtection, quizController.submitAnswer);
-quizRouter.post("/attempts/:id/submit", csrfProtection, quizController.finalizeAttempt);
-quizRouter.get("/attempts/:id/review", quizController.getAttemptReview);
+quizRouter.get("/quizzes/:id/attempts", requireAuth, quizController.listMyAttempts);
+quizRouter.post("/quizzes/:id/attempts", requireAuth, csrfProtection, quizController.startAttempt);
+quizRouter.post("/attempts/:id/answers", requireAuth, csrfProtection, quizController.submitAnswer);
+quizRouter.post("/attempts/:id/submit", requireAuth, csrfProtection, quizController.finalizeAttempt);
+quizRouter.get("/attempts/:id/review", requireAuth, quizController.getAttemptReview);
