@@ -1,0 +1,169 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --radius: 0.75rem;
+
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+
+  --color-muted: #f1f5f4;
+  --color-muted-foreground: #5b6b6a;
+
+  --color-border: #e2e8e7;
+  --color-input: #e2e8e7;
+  --color-ring: #059669;
+
+  /* Primary — Emerald */
+  --color-primary: #059669;
+  --color-primary-foreground: #ffffff;
+  --color-primary-hover: #047857;
+
+  /* Secondary — Blue */
+  --color-secondary: #2563eb;
+  --color-secondary-foreground: #ffffff;
+  --color-secondary-hover: #1d4ed8;
+
+  /* Accent — Yellow */
+  --color-accent: #facc15;
+  --color-accent-foreground: #422006;
+
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+
+  --color-success: #16a34a;
+  --color-success-foreground: #ffffff;
+}
+
+.dark {
+  --color-background: #0a0f0d;
+  --color-foreground: #e7f0ee;
+
+  --color-card: #101715;
+  --color-card-foreground: #e7f0ee;
+
+  --color-muted: #16211e;
+  --color-muted-foreground: #93a6a2;
+
+  --color-border: #223330;
+  --color-input: #223330;
+  --color-ring: #34d399;
+
+  --color-primary: #34d399;
+  --color-primary-foreground: #06120e;
+  --color-primary-hover: #6ee7b7;
+
+  --color-secondary: #60a5fa;
+  --color-secondary-foreground: #06120e;
+  --color-secondary-hover: #93c5fd;
+
+  --color-accent: #fde047;
+  --color-accent-foreground: #422006;
+
+  --color-destructive: #f87171;
+  --color-destructive-foreground: #1a0505;
+
+  --color-success: #4ade80;
+  --color-success-foreground: #06120e;
+}
+
+@theme inline {
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-card: var(--color-card);
+  --color-card-foreground: var(--color-card-foreground);
+  --color-muted: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-foreground);
+  --color-border: var(--color-border);
+  --color-input: var(--color-input);
+  --color-ring: var(--color-ring);
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-secondary: var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-secondary-hover: var(--color-secondary-hover);
+  --color-accent: var(--color-accent);
+  --color-accent-foreground: var(--color-accent-foreground);
+  --color-destructive: var(--color-destructive);
+  --color-destructive-foreground: var(--color-destructive-foreground);
+  --color-success: var(--color-success);
+  --color-success-foreground: var(--color-success-foreground);
+
+  --font-heading: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-alt: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-slide-up: slide-up 0.5s ease-out;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-12px);
+    }
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: color-mix(in srgb, var(--color-card) 65%, transparent);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  }
+}

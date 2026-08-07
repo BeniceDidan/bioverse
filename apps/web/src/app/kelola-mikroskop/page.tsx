@@ -1,0 +1,206 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { UploadCloud, Microscope, CheckCircle2, AlertCircle, MapPin, Pencil } from "lucide-react";
+import { useAuthStore } from "@/lib/auth-store";
+import { apiClient, ApiClientError } from "@/lib/api-client";
+import type { MaterialSectionOption, MicroscopeSlideSummary } from "@/lib/microscope-types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export default function KelolaMikroskopPage() {
+  const router = useRouter();
+  const { user, status } = useAuthStore();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.replace("/login");
+    else if (status === "authenticated" && user && user.role !== "TEACHER") router.replace("/");
+  }, [status, user, router]);
+
+  const [file, setFile] = useState<File | null>(null);
+  const [tissueName, setTissueName] = useState("");
+  const [description, setDescription] = useState("");
+  const [materialSectionId, setMaterialSectionId] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const sectionsQuery = useQuery({
+    queryKey: ["teacher-sections"],
+    queryFn: () => apiClient.get<{ sections: MaterialSectionOption[] }>("/api/teacher/materials/sections"),
+    enabled: status === "authenticated" && user?.role === "TEACHER",
+  });
+
+  const slidesQuery = useQuery({
+    queryKey: ["teacher-microscope-slides"],
+    queryFn: () => apiClient.get<{ slides: MicroscopeSlideSummary[] }>("/api/teacher/microscope/slides"),
+    enabled: status === "authenticated" && user?.role === "TEACHER",
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: () => {
+      const form = new FormData();
+      form.append("file", file!);
+      form.append("materialSectionId", materialSectionId);
+      form.append("tissueName", tissueName);
+      form.append("description", description);
+      return apiClient.postForm("/api/teacher/microscope/slides", form);
+    },
+    onSuccess: () => {
+      setFormError(null);
+      setFile(null);
+      setTissueName("");
+      setDescription("");
+      setMaterialSectionId("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      queryClient.invalidateQueries({ queryKey: ["teacher-microscope-slides"] });
+    },
+    onError: (err) => setFormError(err instanceof ApiClientError ? err.message : "Gagal mengunggah preparat"),
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    if (!file) return setFormError("Pilih gambar preparat terlebih dahulu.");
+    if (!materialSectionId) return setFormError("Pilih submateri terkait.");
+    if (!tissueName.trim() || !description.trim()) return setFormError("Nama jaringan dan deskripsi wajib diisi.");
+    uploadMutation.mutate();
+  }
+
+  if (status === "idle" || status === "loading" || (status === "authenticated" && user?.role !== "TEACHER")) {
+    return <div className="py-24 text-center text-sm text-muted-foreground">Memuat...</div>;
+  }
+
+  const slides = slidesQuery.data?.slides ?? [];
+  const sections = sectionsQuery.data?.sections ?? [];
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 lg:px-8">
+      <div className="text-center">
+        <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Microscope className="size-7" />
+        </span>
+        <h1 className="mt-4 font-heading text-3xl font-bold text-foreground">Kelola Virtual Microscope</h1>
+        <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+          Unggah foto preparat, lalu tambahkan label pada bagian-bagian jaringan.
+        </p>
+      </div>
+
+      <Card className="mt-8">
+        <CardContent className="p-6">
+          <h2 className="font-heading font-semibold text-foreground">Unggah Preparat Baru</h2>
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <div>
+              <Label htmlFor="slide-file">Gambar Preparat</Label>
+              <input
+                ref={fileInputRef}
+                id="slide-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="mt-1.5 block w-full text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="section">Submateri Terkait</Label>
+              <select
+                id="section"
+                value={materialSectionId}
+                onChange={(e) => setMaterialSectionId(e.target.value)}
+                className="mt-1.5 h-11 w-full rounded-lg border border-input bg-card px-3.5 text-sm text-foreground"
+              >
+                <option value="">Pilih submateri...</option>
+                {sections.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title} {s.isPublished ? "" : "(draft)"}
+                  </option>
+                ))}
+              </select>
+              {sections.length === 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Belum ada submateri. Tambahkan materi lewat halaman Upload Materi terlebih dahulu.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="tissueName">Nama Jaringan</Label>
+              <Input
+                id="tissueName"
+                value={tissueName}
+                onChange={(e) => setTissueName(e.target.value)}
+                placeholder="Contoh: Testis (perbesaran sedang)"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Deskripsi Singkat</Label>
+              <Input
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Contoh: Testis memiliki banyak tubulus seminiferus yang berkelok-kelok."
+              />
+            </div>
+
+            {formError && (
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" loading={uploadMutation.isPending}>
+              <UploadCloud className="size-4" /> Unggah Preparat
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="mt-10 space-y-3">
+        <h2 className="font-heading font-semibold text-foreground">Preparat Anda</h2>
+        {slides.map((slide) => (
+          <Card key={slide.id}>
+            <CardContent className="flex flex-wrap items-center gap-4 p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${process.env.NEXT_PUBLIC_API_URL}${slide.slideImageUrl}`}
+                alt={slide.tissueName}
+                className="size-16 shrink-0 rounded-lg object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-foreground">{slide.tissueName}</p>
+                <p className="truncate text-xs text-muted-foreground">{slide.materialSection.title}</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <Badge variant={slide.isPublished ? "success" : "muted"}>
+                    {slide.isPublished ? <CheckCircle2 className="size-3" /> : null}
+                    {slide.isPublished ? "Terbit" : "Draft"}
+                  </Badge>
+                  <Badge variant="outline">
+                    <MapPin className="size-3" /> {slide._count?.hotspots ?? 0} label
+                  </Badge>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/kelola-mikroskop/${slide.id}`}>
+                  <Pencil className="size-4" /> Beri Label
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+
+        {slides.length === 0 && !slidesQuery.isLoading && (
+          <p className="py-8 text-center text-sm text-muted-foreground">Belum ada preparat yang diunggah.</p>
+        )}
+      </div>
+    </div>
+  );
+}
