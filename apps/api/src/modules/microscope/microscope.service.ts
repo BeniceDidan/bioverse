@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { uploadBuffer, deleteByUrl } from "../../lib/storage";
 import { ApiError } from "../../utils/ApiError";
 
 interface CreateSlideInput {
@@ -13,6 +14,12 @@ export async function createSlide(teacherId: string, input: CreateSlideInput) {
   if (!section) throw ApiError.badRequest("Submateri tidak ditemukan");
 
   const count = await prisma.microscopeSlide.count({ where: { materialSectionId: input.materialSectionId } });
+  const slideImageUrl = await uploadBuffer(
+    input.file.buffer,
+    input.file.originalname,
+    input.file.mimetype,
+    "microscope-slides"
+  );
 
   return prisma.microscopeSlide.create({
     data: {
@@ -20,7 +27,7 @@ export async function createSlide(teacherId: string, input: CreateSlideInput) {
       teacherId,
       tissueName: input.tissueName,
       description: input.description,
-      slideImageUrl: `/uploads/${input.file.filename}`,
+      slideImageUrl,
       order: count + 1,
     },
   });
@@ -66,8 +73,9 @@ export async function setSlidePublished(slideId: string, teacherId: string, isPu
 }
 
 export async function deleteSlide(slideId: string, teacherId: string) {
-  await getOwnedSlide(slideId, teacherId);
+  const slide = await getOwnedSlide(slideId, teacherId);
   await prisma.microscopeSlide.delete({ where: { id: slideId } });
+  await deleteByUrl(slide.slideImageUrl).catch(() => {});
 }
 
 interface HotspotInput {

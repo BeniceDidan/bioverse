@@ -1,7 +1,7 @@
-import fs from "node:fs/promises";
 import { PDFParse } from "pdf-parse";
 import { prisma } from "../../lib/prisma";
 import { generateJson, isAiConfigured } from "../../lib/ai-client";
+import { uploadBuffer } from "../../lib/storage";
 import { ApiError } from "../../utils/ApiError";
 
 const MAX_PROMPT_CHARS = 18000;
@@ -20,20 +20,20 @@ function slugify(input: string): string {
 
 export async function createUpload(teacherId: string, file: Express.Multer.File) {
   const material = await prisma.material.findFirstOrThrow();
+  const fileUrl = await uploadBuffer(file.buffer, file.originalname, file.mimetype, "materi-pdf");
 
   const upload = await prisma.materialUpload.create({
     data: {
       teacherId,
       materialId: material.id,
       fileName: file.originalname,
-      fileUrl: `/uploads/${file.filename}`,
+      fileUrl,
       status: "UPLOADED",
     },
   });
 
   try {
-    const buffer = await fs.readFile(file.path);
-    const parser = new PDFParse({ data: buffer });
+    const parser = new PDFParse({ data: file.buffer });
     const result = await parser.getText();
 
     const updated = await prisma.materialUpload.update({

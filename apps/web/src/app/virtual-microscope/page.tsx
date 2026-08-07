@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Microscope, MapPin, Sparkles } from "lucide-react";
 import { apiServerGet } from "@/lib/api-server";
+import { resolveFileUrl } from "@/lib/resolve-file-url";
 import type { MicroscopeSlideSummary } from "@/lib/microscope-types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,7 @@ export default async function VirtualMicroscopeListPage() {
               <div className="aspect-video overflow-hidden bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL}${slide.slideImageUrl}`}
+                  src={resolveFileUrl(slide.slideImageUrl)}
                   alt={slide.tissueName}
                   className="size-full object-cover transition-transform group-hover:scale-105"
                 />

@@ -16,6 +16,11 @@ export function createApp() {
   const app = express();
 
   app.disable("x-powered-by");
+  // Render puts exactly one reverse proxy in front of the app. Without this,
+  // Express treats every request as coming from that proxy's IP, which
+  // collapses everyone behind it (e.g. a whole school's shared network)
+  // into a single express-rate-limit bucket instead of limiting per client.
+  app.set("trust proxy", 1);
   app.use(helmetMiddleware);
   app.use(corsMiddleware);
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

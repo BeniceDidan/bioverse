@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Rocket, EyeOff, Trash2, Plus, X, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient, ApiClientError } from "@/lib/api-client";
+import { resolveFileUrl } from "@/lib/resolve-file-url";
 import type { MicroscopeHotspot, MicroscopeSlideDetail } from "@/lib/microscope-types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -182,7 +183,7 @@ export default function AnnotateSlidePage() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`${process.env.NEXT_PUBLIC_API_URL}${slide.slideImageUrl}`}
+                src={resolveFileUrl(slide.slideImageUrl)}
                 alt={slide.tissueName}
                 className="block w-full select-none"
                 draggable={false}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Eye, EyeOff, MapPin, Target, Sparkles, Home, Quote } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
+import { resolveFileUrl } from "@/lib/resolve-file-url";
 import type { MicroscopeSlideDetail } from "@/lib/microscope-types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ export default function MicroscopeViewerPage() {
             <div className="relative overflow-hidden rounded-2xl border border-border bg-black/5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`${process.env.NEXT_PUBLIC_API_URL}${slide.slideImageUrl}`}
+                src={resolveFileUrl(slide.slideImageUrl)}
                 alt={slide.tissueName}
                 className="block w-full select-none"
                 draggable={false}

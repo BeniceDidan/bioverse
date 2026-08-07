@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UploadCloud, Microscope, CheckCircle2, AlertCircle, MapPin, Pencil } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient, ApiClientError } from "@/lib/api-client";
+import { resolveFileUrl } from "@/lib/resolve-file-url";
 import type { MaterialSectionOption, MicroscopeSlideSummary } from "@/lib/microscope-types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -171,7 +172,7 @@ export default function KelolaMikroskopPage() {
             <CardContent className="flex flex-wrap items-center gap-4 p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`${process.env.NEXT_PUBLIC_API_URL}${slide.slideImageUrl}`}
+                src={resolveFileUrl(slide.slideImageUrl)}
                 alt={slide.tissueName}
                 className="size-16 shrink-0 rounded-lg object-cover"
               />
