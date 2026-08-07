@@ -4,12 +4,10 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install && npm run build --workspace=packages/shared && npx prisma generate --schema=apps/api/prisma/schema.prisma && npm run build --workspace=apps/api
-    startCommand: npm run db:deploy --workspace=apps/api && npm run start --workspace=apps/api
+    buildCommand: npm install --include=dev && npm run build --workspace=packages/shared && npx prisma generate --schema=apps/api/prisma/schema.prisma && npm run build --workspace=apps/api
+    startCommand: NODE_ENV=production npm run db:deploy --workspace=apps/api && NODE_ENV=production npm run start --workspace=apps/api
     healthCheckPath: /api/health
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: PORT
         value: 4000
       - key: DATABASE_URL
