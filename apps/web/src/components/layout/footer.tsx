@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Leaf, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import { BioVerseLogo } from "./bioverse-logo";
 
 const SOCIALS = ["IG", "YT", "FB"];
 
@@ -24,9 +25,7 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           <div>
             <Link href="/" className="flex items-center gap-2 font-heading text-lg font-bold text-foreground">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <Leaf className="size-5" />
-              </span>
+              <BioVerseLogo className="size-9" />
               BioVerse
             </Link>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">

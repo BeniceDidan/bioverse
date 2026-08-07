@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const APPLE_EASE = [0.32, 0.72, 0, 1] as const;
+
 export function NotificationMenu() {
   const notifications: { id: string; title: string; message: string }[] = [];
 
@@ -16,7 +19,13 @@ export function NotificationMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Notifikasi" className="relative">
-          <Bell className="size-[18px]" />
+          <motion.span
+            whileTap={{ scale: 0.75, rotate: -15 }}
+            transition={{ duration: 0.2, ease: APPLE_EASE }}
+            className="flex"
+          >
+            <Bell className="size-[18px]" />
+          </motion.span>
           {notifications.length > 0 && (
             <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-accent" />
           )}

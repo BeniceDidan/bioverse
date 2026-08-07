@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Leaf } from "lucide-react";
+import { BioVerseLogo } from "@/components/layout/bioverse-logo";
 
 export function AuthShell({
   title,
@@ -19,9 +19,7 @@ export function AuthShell({
 
       <div className="relative w-full max-w-md animate-slide-up rounded-2xl border border-border bg-card p-8 shadow-xl">
         <Link href="/" className="mb-6 flex items-center gap-2 font-heading text-lg font-bold text-foreground">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Leaf className="size-5" />
-          </span>
+          <BioVerseLogo className="size-9" />
           BioVerse
         </Link>
         <h1 className="font-heading text-2xl font-bold text-foreground">{title}</h1>

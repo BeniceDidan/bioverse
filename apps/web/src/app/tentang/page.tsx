@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Leaf, Target, Users, BookOpen } from "lucide-react";
+import { Target, Users, BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { BioVerseLogo } from "@/components/layout/bioverse-logo";
 
 export const metadata: Metadata = { title: "Tentang Kami" };
 
@@ -44,9 +45,7 @@ export default function TentangPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="text-center">
-        <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-          <Leaf className="size-7" />
-        </span>
+        <BioVerseLogo className="mx-auto size-14" />
         <h1 className="mt-5 font-heading text-3xl font-bold text-foreground sm:text-4xl">Tentang BioVerse</h1>
         <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
           BioVerse adalah platform pembelajaran biologi interaktif yang mengintegrasikan multiple
