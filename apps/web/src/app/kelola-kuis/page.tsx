@@ -217,7 +217,9 @@ export default function KelolaKuisPage() {
             <CardContent className="flex flex-wrap items-center gap-4 p-4">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-foreground">{quiz.title}</p>
-                <p className="truncate text-xs text-muted-foreground">{quiz.materialSection.title}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {quiz.materialSection?.title ?? "Materi telah dihapus"}
+                </p>
                 <div className="mt-1 flex items-center gap-2">
                   <Badge variant={quiz.isPublished ? "success" : "muted"}>
                     {quiz.isPublished ? <CheckCircle2 className="size-3" /> : null}

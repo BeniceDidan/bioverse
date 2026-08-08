@@ -42,7 +42,7 @@ export default async function KuisListPage() {
                 <h2 className="mt-3 font-heading text-lg font-semibold text-foreground">{quiz.title}</h2>
                 <p className="mt-1.5 line-clamp-2 flex-1 text-sm text-muted-foreground">{quiz.description}</p>
                 <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <Badge variant="outline">{quiz.materialSection.title}</Badge>
+                  <Badge variant="outline">{quiz.materialSection?.title ?? "Materi Umum"}</Badge>
                   <span>{quiz._count?.questions ?? 0} soal</span>
                 </div>
               </CardContent>

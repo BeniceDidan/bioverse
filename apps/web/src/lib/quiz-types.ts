@@ -43,7 +43,10 @@ export interface QuizSummary {
   timeLimitMinutes: number | null;
   passingScore: number;
   createdAt: string;
-  materialSection: { id: string; title: string };
+  // Nullable: a quiz survives its submateri being deleted (server-side
+  // SetNull) rather than being deleted along with it, so this can be null
+  // for an orphaned quiz.
+  materialSection: { id: string; title: string } | null;
   _count?: { questions: number; attempts?: number };
 }
 
