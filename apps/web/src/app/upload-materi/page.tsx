@@ -17,7 +17,6 @@ import {
   Pencil,
   RefreshCw,
   Trash2,
-  FileX,
   X,
   Check,
 } from "lucide-react";
@@ -115,15 +114,6 @@ export default function UploadMateriPage() {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: ["teacher-uploads"] });
     },
-    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus riwayat upload"),
-  });
-
-  const deleteSectionMutation = useMutation({
-    mutationFn: (sectionId: string) => apiClient.delete(`/api/teacher/materials/sections/${sectionId}`),
-    onSuccess: () => {
-      setActionError(null);
-      queryClient.invalidateQueries({ queryKey: ["teacher-uploads"] });
-    },
     onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus materi"),
   });
 
@@ -157,16 +147,11 @@ export default function UploadMateriPage() {
     setPreviewId(null);
   }
 
-  function handleDeleteSection(upload: MaterialUpload) {
-    if (!upload.materialSection) return;
-    const ok = window.confirm(
-      `Hapus materi "${upload.materialSection.title}"? Preparat mikroskop dan video yang terkait pada submateri ini juga akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
-    );
-    if (ok) deleteSectionMutation.mutate(upload.materialSection.id);
-  }
-
   function handleDeleteUpload(upload: MaterialUpload) {
-    const ok = window.confirm(`Hapus riwayat upload "${upload.fileName}" dari daftar ini?`);
+    const message = upload.materialSection
+      ? `Hapus "${upload.fileName}"? Submateri "${upload.materialSection.title}" yang dihasilkan dari PDF ini — beserta preparat mikroskop dan video yang terkait — juga akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
+      : `Hapus riwayat upload "${upload.fileName}" dari daftar ini?`;
+    const ok = window.confirm(message);
     if (ok) deleteUploadMutation.mutate(upload.id);
   }
 
@@ -370,25 +355,12 @@ export default function UploadMateriPage() {
                   >
                     <RefreshCw className="size-4" />
                   </Button>
-                  {upload.materialSection && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      title="Hapus materi ini"
-                      aria-label="Hapus materi ini"
-                      onClick={() => handleDeleteSection(upload)}
-                      loading={deleteSectionMutation.isPending && deleteSectionMutation.variables === upload.materialSection.id}
-                    >
-                      <FileX className="size-4" />
-                    </Button>
-                  )}
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-muted-foreground hover:text-destructive"
-                    title="Hapus riwayat upload ini"
-                    aria-label="Hapus riwayat upload ini"
+                    title={upload.materialSection ? "Hapus materi & riwayat upload" : "Hapus riwayat upload ini"}
+                    aria-label={upload.materialSection ? "Hapus materi & riwayat upload" : "Hapus riwayat upload ini"}
                     onClick={() => handleDeleteUpload(upload)}
                     loading={deleteUploadMutation.isPending && deleteUploadMutation.variables === upload.id}
                   >

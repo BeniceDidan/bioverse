@@ -227,6 +227,15 @@ export async function replaceUploadFile(uploadId: string, teacherId: string, fil
 export async function deleteUploadRecord(uploadId: string, teacherId: string) {
   const upload = await prisma.materialUpload.findUnique({ where: { id: uploadId } });
   if (!upload || upload.teacherId !== teacherId) throw ApiError.notFound("Upload tidak ditemukan");
+
+  // Deleting the PDF removes the submateri it produced too — from a
+  // teacher's point of view the PDF *is* the materi, so leaving the
+  // AI-generated content live and published after its source was "deleted"
+  // was confusing (it silently kept showing up under /materi).
+  if (upload.materialSectionId) {
+    await prisma.materialSection.delete({ where: { id: upload.materialSectionId } });
+  }
+
   await prisma.materialUpload.delete({ where: { id: uploadId } });
   await deleteByUrl(upload.fileUrl).catch(() => {});
 }
