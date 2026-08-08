@@ -16,7 +16,17 @@ interface RequestOptions extends RequestInit {
   skipAuthRetry?: boolean;
 }
 
-async function rawRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+// The free-tier API can be asleep (idle 15min+) and take 30-60s+ to wake up.
+// A cold instance shows up here as either a thrown network error (connection
+// reset while it's still starting) or a 502/503/504 from the proxy in front
+// of it — neither means the request actually reached app code, so retrying
+// is safe. Backoff is long enough to ride out Render's documented worst-case
+// wake time instead of failing an action the user is actively waiting on
+// (e.g. "Mulai Kuis") right as the instance was about to come up.
+const RETRY_DELAYS_MS = [3000, 6000, 12000, 20000];
+const TRANSIENT_STATUS = new Set([502, 503, 504]);
+
+async function rawRequest<T>(path: string, options: RequestOptions = {}, attempt = 0): Promise<T> {
   const { accessToken, csrfToken } = useAuthStore.getState();
   const isMutating = !["GET", "HEAD", "OPTIONS"].includes(options.method ?? "GET");
 
@@ -30,17 +40,30 @@ async function rawRequest<T>(path: string, options: RequestOptions = {}): Promis
   // next.config.ts), so this keeps working regardless of routing changes.
   if (isMutating && csrfToken) headers.set("x-csrf-token", csrfToken);
 
-  // Requests go to the web app's own origin and are proxied server-side to
-  // the API (see the rewrite in next.config.ts). This makes session/CSRF
-  // cookies first-party, so they aren't dropped by browsers that block
-  // third-party cookies (Safari does this unconditionally, regardless of
-  // SameSite — that was silently breaking login persistence and any
-  // CSRF-protected action for anyone not on Chrome).
-  const res = await fetch(path, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  async function retryOrThrow(err: ApiClientError): Promise<T> {
+    if (attempt >= RETRY_DELAYS_MS.length) throw err;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+    return rawRequest<T>(path, options, attempt + 1);
+  }
+
+  let res: Response;
+  try {
+    // Requests go to the web app's own origin and are proxied server-side to
+    // the API (see the rewrite in next.config.ts). This makes session/CSRF
+    // cookies first-party, so they aren't dropped by browsers that block
+    // third-party cookies (Safari does this unconditionally, regardless of
+    // SameSite — that was silently breaking login persistence and any
+    // CSRF-protected action for anyone not on Chrome).
+    res = await fetch(path, { ...options, headers, credentials: "include" });
+  } catch {
+    return retryOrThrow(
+      new ApiClientError(0, "Tidak dapat terhubung ke server. Periksa koneksi internet kamu dan coba lagi.")
+    );
+  }
+
+  if (TRANSIENT_STATUS.has(res.status)) {
+    return retryOrThrow(new ApiClientError(res.status, "Server sedang menyala kembali. Silakan coba lagi."));
+  }
 
   const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
 
