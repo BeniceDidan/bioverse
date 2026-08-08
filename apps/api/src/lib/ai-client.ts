@@ -1,6 +1,10 @@
 import { env } from "../config/env";
 
-export const AI_MODEL = "gemini-flash-latest";
+// Flash-Lite specifically because it's Google's cost-optimized, high-volume
+// tier — the regular Flash model's free-tier quota (20 requests/day total,
+// shared across AI Tutor + materi AI-expand) was nowhere near enough for
+// real classroom use and was exhausted within a single day of testing.
+export const AI_MODEL = "gemini-3.1-flash-lite";
 
 // Untyped: @google/genai is ESM-only, statically importing its types from this
 // CommonJS module requires a resolution-mode attribute TS won't emit for .ts files.
