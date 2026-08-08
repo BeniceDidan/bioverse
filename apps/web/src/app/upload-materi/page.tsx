@@ -19,10 +19,12 @@ import {
   Trash2,
   X,
   Check,
+  FileX,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import type { MaterialUpload, MaterialUploadDetail, UploadStatus } from "@/lib/materi-types";
+import type { MaterialSectionOption } from "@/lib/microscope-types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +62,17 @@ export default function UploadMateriPage() {
     enabled: status === "authenticated" && user?.role === "TEACHER",
     refetchInterval: (query) =>
       query.state.data?.uploads.some((u) => u.status === "UPLOADED" || u.status === "EXPANDING") ? 2000 : false,
+  });
+
+  // Sections whose source PDF was already deleted under the old (pre-fix)
+  // behavior, back when deleting an upload didn't cascade to its section —
+  // these have no MaterialUpload row anymore, so they never get a card in
+  // the list above and can't be deleted from there. Surfaced separately so
+  // they're not stuck invisible forever.
+  const sectionsQuery = useQuery({
+    queryKey: ["teacher-sections"],
+    queryFn: () => apiClient.get<{ sections: MaterialSectionOption[] }>("/api/teacher/materials/sections"),
+    enabled: status === "authenticated" && user?.role === "TEACHER",
   });
 
   const uploadMutation = useMutation({
@@ -117,6 +130,15 @@ export default function UploadMateriPage() {
     onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus materi"),
   });
 
+  const deleteOrphanSectionMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/teacher/materials/sections/${id}`),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-sections"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus materi"),
+  });
+
   const editSectionMutation = useMutation({
     mutationFn: ({ id, title, description }: { id: string; title: string; description: string }) =>
       apiClient.patch(`/api/teacher/materials/sections/${id}`, { title, description }),
@@ -155,6 +177,13 @@ export default function UploadMateriPage() {
     if (ok) deleteUploadMutation.mutate(upload.id);
   }
 
+  function handleDeleteOrphanSection(section: MaterialSectionOption) {
+    const ok = window.confirm(
+      `Hapus "${section.title}"? Submateri ini sudah tidak punya PDF sumber (mungkin terhapus sebelumnya). Tindakan ini tidak bisa dibatalkan.`
+    );
+    if (ok) deleteOrphanSectionMutation.mutate(section.id);
+  }
+
   function triggerReplace(uploadId: string) {
     setReplaceTargetId(uploadId);
     replaceInputRef.current?.click();
@@ -186,6 +215,8 @@ export default function UploadMateriPage() {
   }
 
   const uploads = uploadsQuery.data?.uploads ?? [];
+  const linkedSectionIds = new Set(uploads.map((u) => u.materialSection?.id).filter(Boolean));
+  const orphanSections = (sectionsQuery.data?.sections ?? []).filter((s) => !linkedSectionIds.has(s.id));
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 lg:px-8">
@@ -438,6 +469,44 @@ export default function UploadMateriPage() {
           </p>
         )}
       </div>
+
+      {orphanSections.length > 0 && (
+        <div className="mt-10">
+          <h2 className="flex items-center gap-2 font-heading font-semibold text-foreground">
+            <FileX className="size-4 text-destructive" /> Materi Tanpa Sumber PDF
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Submateri ini sudah tidak punya PDF sumber (kemungkinan terhapus sebelumnya) dan masih tampil di halaman
+            Materi. Hapus jika sudah tidak diperlukan.
+          </p>
+          <div className="mt-3 space-y-3">
+            {orphanSections.map((section) => (
+              <Card key={section.id}>
+                <CardContent className="flex flex-wrap items-center gap-4 p-5">
+                  <FileX className="size-8 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground">{section.title}</p>
+                    <Badge variant={section.isPublished ? "success" : "muted"}>
+                      {section.isPublished ? "Sudah terbit" : "Draft"}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    title="Hapus materi ini"
+                    aria-label="Hapus materi ini"
+                    onClick={() => handleDeleteOrphanSection(section)}
+                    loading={deleteOrphanSectionMutation.isPending && deleteOrphanSectionMutation.variables === section.id}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
