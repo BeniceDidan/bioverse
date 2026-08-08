@@ -11,11 +11,14 @@ import {
   Microscope,
   Video as VideoIcon,
   ListTodo,
+  Download,
 } from "lucide-react";
 import { apiServerGet, apiServerGetWithStatus } from "@/lib/api-server";
 import type { MaterialSectionDetail, MaterialWithSections } from "@/lib/materi-types";
+import { resolveFileUrl } from "@/lib/resolve-file-url";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { MarkdownContent } from "@/components/materi/markdown-content";
 import { MateriActions } from "@/components/materi/materi-actions";
 
@@ -76,7 +79,9 @@ export default async function MateriDetailPage({ params }: { params: Promise<{ s
       </nav>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">Submateri {section.order}/{sections.length || section.order}</Badge>
+        <Badge variant="secondary">
+          Submateri {currentIndex >= 0 ? currentIndex + 1 : section.order}/{sections.length || section.order}
+        </Badge>
         <Badge variant="outline">
           <Clock className="size-3.5" /> {section.estimatedMinutes} menit
         </Badge>
@@ -85,8 +90,15 @@ export default async function MateriDetailPage({ params }: { params: Promise<{ s
       <h1 className="mt-4 font-heading text-3xl font-bold text-foreground sm:text-4xl">{section.title}</h1>
       <p className="mt-3 text-lg text-muted-foreground">{section.description}</p>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         <MateriActions sectionId={section.id} />
+        {section.upload?.fileUrl && (
+          <Button variant="outline" size="sm" asChild>
+            <a href={resolveFileUrl(section.upload.fileUrl)} download={section.upload.fileName}>
+              <Download className="size-4" /> Unduh Sumber Materi
+            </a>
+          </Button>
+        )}
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">

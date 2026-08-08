@@ -61,9 +61,15 @@ export async function getSlideForTeacher(slideId: string, teacherId: string) {
 export async function updateSlide(
   slideId: string,
   teacherId: string,
-  data: Partial<{ tissueName: string; description: string }>
+  data: Partial<{ tissueName: string; description: string; materialSectionId: string }>
 ) {
   await getOwnedSlide(slideId, teacherId);
+
+  if (data.materialSectionId) {
+    const section = await prisma.materialSection.findUnique({ where: { id: data.materialSectionId } });
+    if (!section) throw ApiError.badRequest("Submateri tidak ditemukan");
+  }
+
   return prisma.microscopeSlide.update({ where: { id: slideId }, data });
 }
 

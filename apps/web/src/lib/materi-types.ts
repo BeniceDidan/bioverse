@@ -5,6 +5,7 @@ export interface MaterialSectionSummary {
   title: string;
   description: string;
   estimatedMinutes: number;
+  upload?: { fileUrl: string; fileName: string } | null;
 }
 
 export interface MaterialWithSections {

@@ -22,6 +22,7 @@ materialsRouter.get(
             title: true,
             description: true,
             estimatedMinutes: true,
+            upload: { select: { fileUrl: true, fileName: true } },
           },
         },
       },
@@ -40,6 +41,7 @@ materialsRouter.get(
         videos: { orderBy: { order: "asc" } },
         microscopeSlides: { include: { hotspots: true }, orderBy: { order: "asc" } },
         quizzes: true,
+        upload: { select: { fileUrl: true, fileName: true } },
       },
     });
     if (!section || !section.isPublished) {

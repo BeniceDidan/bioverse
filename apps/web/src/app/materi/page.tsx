@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, Clock, ArrowRight, Sparkles } from "lucide-react";
+import { BookOpen, Clock, ArrowRight, Sparkles, Layers, Waves, Download } from "lucide-react";
 import { apiServerGet } from "@/lib/api-server";
 import type { MaterialWithSections } from "@/lib/materi-types";
+import { resolveFileUrl } from "@/lib/resolve-file-url";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = { title: "Materi Jaringan Hewan" };
+
+const CARD_ACCENTS = [
+  { bg: "from-primary/20 to-primary/5", icon: Layers, iconColor: "text-primary" },
+  { bg: "from-secondary/20 to-secondary/5", icon: Waves, iconColor: "text-secondary" },
+  { bg: "from-accent/30 to-accent/5", icon: Sparkles, iconColor: "text-accent-foreground" },
+];
 
 export default async function MateriListPage() {
   const data = await apiServerGet<{ material: MaterialWithSections | null }>("/api/materials");
@@ -27,27 +34,49 @@ export default async function MateriListPage() {
       </div>
 
       <div className="mt-12 grid gap-5 sm:grid-cols-2">
-        {sections.map((s) => (
-          <Link key={s.id} href={`/materi/${s.slug}`}>
-            <Card className="group h-full transition-all hover:-translate-y-1 hover:shadow-lg">
-              <CardContent className="flex h-full flex-col p-6">
-                <div className="flex items-center justify-between">
-                  <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
-                    {s.order}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="size-3.5" /> {s.estimatedMinutes} menit
+        {sections.map((s, i) => {
+          const accent = CARD_ACCENTS[i % CARD_ACCENTS.length];
+          return (
+            <Card key={s.id} className="group h-full overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
+              <Link href={`/materi/${s.slug}`}>
+                <div className={`relative flex h-20 items-center justify-between bg-gradient-to-br ${accent.bg} px-6`}>
+                  <accent.icon className={`size-10 ${accent.iconColor} opacity-70`} />
+                  <span className="flex size-9 items-center justify-center rounded-lg bg-card text-sm font-bold text-primary shadow-sm">
+                    {i + 1}
                   </span>
                 </div>
-                <h2 className="mt-4 font-heading text-lg font-semibold text-foreground">{s.title}</h2>
-                <p className="mt-1.5 line-clamp-2 flex-1 text-sm text-muted-foreground">{s.description}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
-                  Pelajari <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-                </span>
+              </Link>
+              <CardContent className="flex h-full flex-col p-6 pt-5">
+                <Link href={`/materi/${s.slug}`} className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="size-3.5" /> {s.estimatedMinutes} menit
+                    </span>
+                  </div>
+                  <h2 className="mt-2 font-heading text-lg font-semibold text-foreground">{s.title}</h2>
+                  <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{s.description}</p>
+                </Link>
+                <div className="mt-4 flex items-center justify-between">
+                  <Link
+                    href={`/materi/${s.slug}`}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary"
+                  >
+                    Pelajari <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                  {s.upload?.fileUrl && (
+                    <a
+                      href={resolveFileUrl(s.upload.fileUrl)}
+                      download={s.upload.fileName}
+                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <Download className="size-3.5" /> Unduh Sumber
+                    </a>
+                  )}
+                </div>
               </CardContent>
             </Card>
-          </Link>
-        ))}
+          );
+        })}
 
         {sections.length === 0 && (
           <div className="col-span-2 flex flex-col items-center gap-3 py-16 text-center">

@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import multer from "multer";
 import { ApiError } from "../utils/ApiError";
 import { env } from "../config/env";
 
@@ -13,6 +14,18 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
       message: err.message,
       ...(err.errors ? { errors: err.errors } : {}),
     });
+  }
+
+  // Multer's own errors (file too large, unexpected field, etc.) previously
+  // fell through to the generic 500 below instead of a clear, actionable
+  // message — a likely real cause of "some files fail to upload" with no
+  // useful feedback to the teacher.
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "Ukuran file terlalu besar."
+        : "Gagal mengunggah file. Pastikan format dan ukuran file sesuai.";
+    return res.status(400).json({ success: false, message });
   }
 
   if (!env.isProduction) {

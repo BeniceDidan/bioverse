@@ -14,6 +14,12 @@ import {
   Eye,
   EyeOff,
   Rocket,
+  Pencil,
+  RefreshCw,
+  Trash2,
+  FileX,
+  X,
+  Check,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient, ApiClientError } from "@/lib/api-client";
@@ -21,6 +27,8 @@ import type { MaterialUpload, MaterialUploadDetail, UploadStatus } from "@/lib/m
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { MarkdownContent } from "@/components/materi/markdown-content";
 import { cn } from "@/lib/utils";
 
@@ -37,8 +45,10 @@ export default function UploadMateriPage() {
   const { user, status } = useAuthStore();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
@@ -86,12 +96,95 @@ export default function UploadMateriPage() {
     onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menerbitkan materi"),
   });
 
+  const replaceMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => {
+      const form = new FormData();
+      form.append("file", file);
+      return apiClient.postForm(`/api/teacher/materials/uploads/${id}/replace`, form);
+    },
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-uploads"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal mengganti dokumen"),
+  });
+
+  const deleteUploadMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/teacher/materials/uploads/${id}`),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-uploads"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus riwayat upload"),
+  });
+
+  const deleteSectionMutation = useMutation({
+    mutationFn: (sectionId: string) => apiClient.delete(`/api/teacher/materials/sections/${sectionId}`),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-uploads"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus materi"),
+  });
+
+  const editSectionMutation = useMutation({
+    mutationFn: ({ id, title, description }: { id: string; title: string; description: string }) =>
+      apiClient.patch(`/api/teacher/materials/sections/${id}`, { title, description }),
+    onSuccess: () => {
+      setActionError(null);
+      setEditingId(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-uploads"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menyimpan perubahan"),
+  });
+
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewQuery = useQuery({
     queryKey: ["teacher-upload-preview", previewId],
     queryFn: () => apiClient.get<{ upload: MaterialUploadDetail }>(`/api/teacher/materials/uploads/${previewId}`),
     enabled: !!previewId,
   });
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
+  function startEdit(upload: MaterialUpload) {
+    if (!upload.materialSection) return;
+    setEditingId(upload.id);
+    setEditTitle(upload.materialSection.title);
+    setEditDescription("");
+    setPreviewId(null);
+  }
+
+  function handleDeleteSection(upload: MaterialUpload) {
+    if (!upload.materialSection) return;
+    const ok = window.confirm(
+      `Hapus materi "${upload.materialSection.title}"? Preparat mikroskop dan video yang terkait pada submateri ini juga akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
+    );
+    if (ok) deleteSectionMutation.mutate(upload.materialSection.id);
+  }
+
+  function handleDeleteUpload(upload: MaterialUpload) {
+    const ok = window.confirm(`Hapus riwayat upload "${upload.fileName}" dari daftar ini?`);
+    if (ok) deleteUploadMutation.mutate(upload.id);
+  }
+
+  function triggerReplace(uploadId: string) {
+    setReplaceTargetId(uploadId);
+    replaceInputRef.current?.click();
+  }
+
+  function handleReplaceFile(files: FileList | null) {
+    const file = files?.[0];
+    if (!file || !replaceTargetId) return;
+    if (file.type !== "application/pdf") {
+      setActionError("Hanya file PDF yang bisa diunggah.");
+      return;
+    }
+    replaceMutation.mutate({ id: replaceTargetId, file });
+    setReplaceTargetId(null);
+  }
 
   function handleFiles(files: FileList | null) {
     const file = files?.[0];
@@ -162,6 +255,13 @@ export default function UploadMateriPage() {
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
+        <input
+          ref={replaceInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) => handleReplaceFile(e.target.files)}
+        />
         {uploadMutation.isPending ? (
           <Loader2 className="size-8 animate-spin text-primary" />
         ) : (
@@ -210,7 +310,7 @@ export default function UploadMateriPage() {
                 )}
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 {(upload.status === "READY_TO_EXPAND" || upload.status === "FAILED") && (
                   <Button
                     size="sm"
@@ -247,8 +347,94 @@ export default function UploadMateriPage() {
                     </Link>
                   </Button>
                 )}
+
+                <div className="ml-1 flex items-center gap-1 border-l border-border pl-2">
+                  {upload.materialSection && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Edit judul & deskripsi"
+                      aria-label="Edit judul & deskripsi"
+                      onClick={() => startEdit(upload)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Ganti dokumen PDF"
+                    aria-label="Ganti dokumen PDF"
+                    onClick={() => triggerReplace(upload.id)}
+                    loading={replaceMutation.isPending && replaceMutation.variables?.id === upload.id}
+                  >
+                    <RefreshCw className="size-4" />
+                  </Button>
+                  {upload.materialSection && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      title="Hapus materi ini"
+                      aria-label="Hapus materi ini"
+                      onClick={() => handleDeleteSection(upload)}
+                      loading={deleteSectionMutation.isPending && deleteSectionMutation.variables === upload.materialSection.id}
+                    >
+                      <FileX className="size-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    title="Hapus riwayat upload ini"
+                    aria-label="Hapus riwayat upload ini"
+                    onClick={() => handleDeleteUpload(upload)}
+                    loading={deleteUploadMutation.isPending && deleteUploadMutation.variables === upload.id}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
+
+            {editingId === upload.id && upload.materialSection && (
+              <CardContent className="space-y-3 border-t border-border pt-5">
+                <div>
+                  <Label htmlFor={`title-${upload.id}`}>Judul Submateri</Label>
+                  <Input id={`title-${upload.id}`} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor={`desc-${upload.id}`}>Deskripsi Singkat</Label>
+                  <textarea
+                    id={`desc-${upload.id}`}
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder={upload.materialSection.title ? "Kosongkan jika tidak ingin mengubah deskripsi" : ""}
+                    rows={3}
+                    className="mt-1.5 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      editSectionMutation.mutate({
+                        id: upload.materialSection!.id,
+                        title: editTitle,
+                        description: editDescription,
+                      })
+                    }
+                    loading={editSectionMutation.isPending}
+                  >
+                    <Check className="size-4" /> Simpan
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>
+                    <X className="size-4" /> Batal
+                  </Button>
+                </div>
+              </CardContent>
+            )}
 
             {previewId === upload.id && (
               <CardContent className="border-t border-border pt-5">

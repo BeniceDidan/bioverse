@@ -142,22 +142,30 @@ export default function MicroscopeViewerPage() {
               )}
 
               <div className="mt-4 space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Semua Label ({slide.hotspots.length})</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  Titik Preparat ({slide.hotspots.length})
+                  {!showAllLabels && (
+                    <span className="ml-1.5 font-normal">— klik untuk menebak & melihat jawabannya</span>
+                  )}
+                </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {slide.hotspots.map((h, i) => (
-                    <button
-                      key={h.id}
-                      onClick={() => setSelectedId(h.id === selectedId ? null : h.id)}
-                      className={cn(
-                        "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                        selectedId === h.id
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      {i + 1}. {h.label}
-                    </button>
-                  ))}
+                  {slide.hotspots.map((h, i) => {
+                    const isRevealed = showAllLabels || selectedId === h.id;
+                    return (
+                      <button
+                        key={h.id}
+                        onClick={() => setSelectedId(h.id === selectedId ? null : h.id)}
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                          selectedId === h.id
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        {i + 1}. {isRevealed ? h.label : "?"}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

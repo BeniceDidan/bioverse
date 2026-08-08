@@ -26,3 +26,12 @@ teacherMaterialsRouter.get("/uploads/:id", uploadController.getUploadDetail);
 teacherMaterialsRouter.post("/upload", csrfProtection, uploadPdf, uploadController.uploadPdfHandler);
 teacherMaterialsRouter.post("/uploads/:id/expand", csrfProtection, uploadController.expandUpload);
 teacherMaterialsRouter.post("/uploads/:id/publish", csrfProtection, uploadController.publishUpload);
+teacherMaterialsRouter.post(
+  "/uploads/:id/replace",
+  csrfProtection,
+  uploadPdf,
+  uploadController.replaceUploadFile
+);
+teacherMaterialsRouter.delete("/uploads/:id", csrfProtection, uploadController.deleteUpload);
+teacherMaterialsRouter.patch("/sections/:id", csrfProtection, uploadController.updateSection);
+teacherMaterialsRouter.delete("/sections/:id", csrfProtection, uploadController.deleteSection);

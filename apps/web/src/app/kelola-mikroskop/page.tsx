@@ -4,7 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UploadCloud, Microscope, CheckCircle2, AlertCircle, MapPin, Pencil } from "lucide-react";
+import {
+  UploadCloud,
+  Microscope,
+  CheckCircle2,
+  AlertCircle,
+  MapPin,
+  Pencil,
+  Settings2,
+  Eye,
+  EyeOff,
+  Trash2,
+  Check,
+  X,
+} from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import { resolveFileUrl } from "@/lib/resolve-file-url";
@@ -31,6 +44,7 @@ export default function KelolaMikroskopPage() {
   const [description, setDescription] = useState("");
   const [materialSectionId, setMaterialSectionId] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const sectionsQuery = useQuery({
     queryKey: ["teacher-sections"],
@@ -64,6 +78,62 @@ export default function KelolaMikroskopPage() {
     },
     onError: (err) => setFormError(err instanceof ApiClientError ? err.message : "Gagal mengunggah preparat"),
   });
+
+  const publishMutation = useMutation({
+    mutationFn: ({ id, publish }: { id: string; publish: boolean }) =>
+      apiClient.post(`/api/teacher/microscope/slides/${id}/${publish ? "publish" : "unpublish"}`),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-microscope-slides"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal mengubah status terbit"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/teacher/microscope/slides/${id}`),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-microscope-slides"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus preparat"),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({
+      id,
+      tissueName: name,
+      description: desc,
+      materialSectionId: sectionId,
+    }: {
+      id: string;
+      tissueName: string;
+      description: string;
+      materialSectionId: string;
+    }) => apiClient.patch(`/api/teacher/microscope/slides/${id}`, { tissueName: name, description: desc, materialSectionId: sectionId }),
+    onSuccess: () => {
+      setActionError(null);
+      setEditingId(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-microscope-slides"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menyimpan perubahan"),
+  });
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTissueName, setEditTissueName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editSectionId, setEditSectionId] = useState("");
+
+  function startEdit(slide: MicroscopeSlideSummary) {
+    setEditingId(slide.id);
+    setEditTissueName(slide.tissueName);
+    setEditDescription(slide.description);
+    setEditSectionId(slide.materialSection.id);
+  }
+
+  function handleDelete(slide: MicroscopeSlideSummary) {
+    const ok = window.confirm(`Hapus preparat "${slide.tissueName}"? Semua label pada preparat ini juga akan terhapus.`);
+    if (ok) deleteMutation.mutate(slide.id);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -167,6 +237,14 @@ export default function KelolaMikroskopPage() {
 
       <div className="mt-10 space-y-3">
         <h2 className="font-heading font-semibold text-foreground">Preparat Anda</h2>
+
+        {actionError && (
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+        )}
+
         {slides.map((slide) => (
           <Card key={slide.id}>
             <CardContent className="flex flex-wrap items-center gap-4 p-4">
@@ -189,12 +267,99 @@ export default function KelolaMikroskopPage() {
                   </Badge>
                 </div>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/kelola-mikroskop/${slide.id}`}>
-                  <Pencil className="size-4" /> Beri Label
-                </Link>
-              </Button>
+              <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/kelola-mikroskop/${slide.id}`}>
+                    <Pencil className="size-4" /> Beri Label
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Edit preparat"
+                  aria-label="Edit preparat"
+                  onClick={() => startEdit(slide)}
+                >
+                  <Settings2 className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title={slide.isPublished ? "Batalkan terbit" : "Terbitkan"}
+                  aria-label={slide.isPublished ? "Batalkan terbit" : "Terbitkan"}
+                  onClick={() => publishMutation.mutate({ id: slide.id, publish: !slide.isPublished })}
+                  loading={publishMutation.isPending && publishMutation.variables?.id === slide.id}
+                >
+                  {slide.isPublished ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  title="Hapus preparat"
+                  aria-label="Hapus preparat"
+                  onClick={() => handleDelete(slide)}
+                  loading={deleteMutation.isPending && deleteMutation.variables === slide.id}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
             </CardContent>
+
+            {editingId === slide.id && (
+              <CardContent className="space-y-3 border-t border-border pt-4">
+                <div>
+                  <Label htmlFor={`edit-tissue-${slide.id}`}>Nama Jaringan</Label>
+                  <Input
+                    id={`edit-tissue-${slide.id}`}
+                    value={editTissueName}
+                    onChange={(e) => setEditTissueName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`edit-section-${slide.id}`}>Submateri Terkait</Label>
+                  <select
+                    id={`edit-section-${slide.id}`}
+                    value={editSectionId}
+                    onChange={(e) => setEditSectionId(e.target.value)}
+                    className="mt-1.5 h-11 w-full rounded-lg border border-input bg-card px-3.5 text-sm text-foreground"
+                  >
+                    {sections.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title} {s.isPublished ? "" : "(draft)"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor={`edit-desc-${slide.id}`}>Deskripsi Singkat</Label>
+                  <Input
+                    id={`edit-desc-${slide.id}`}
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      editMutation.mutate({
+                        id: slide.id,
+                        tissueName: editTissueName,
+                        description: editDescription,
+                        materialSectionId: editSectionId,
+                      })
+                    }
+                    loading={editMutation.isPending}
+                  >
+                    <Check className="size-4" /> Simpan
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>
+                    <X className="size-4" /> Batal
+                  </Button>
+                </div>
+              </CardContent>
+            )}
           </Card>
         ))}
 
