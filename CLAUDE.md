@@ -156,42 +156,41 @@ gotcha below before loosening this.
   other Indonesian ISPs behave the same until proven otherwise.
   What still works: `*.r2.cloudflarestorage.com` (the S3 endpoint the
   API writes through, resolving to real Cloudflare IPs) and
-  `cloudflare.com` itself. So **teacher uploads succeed while student
-  reads fail** — files land in the bucket, then every `<img>` and PDF
-  link pointing at `r2.dev` is dead for anyone on a blocking ISP.
-  The fix is a **custom domain** on the bucket, which Cloudflare
-  recommends for production anyway (r2.dev is also rate-limited and
-  uncached). Attach the domain, then change `R2_PUBLIC_URL` to it.
-  Do this while the bucket is still empty if at all possible — once
-  teachers have uploaded, changing the public URL means rewriting
-  stored URLs, per the handover note below.
+  `cloudflare.com` itself. So uploads succeeded while student reads
+  failed — files landed in the bucket, and every `<img>` and PDF link
+  pointing at `r2.dev` was dead for anyone on a blocking ISP.
+  **Already fixed, and this is why `/api/files/` exists:** nothing
+  links to the bucket hostname any more. `uploadBuffer` returns
+  `/api/files/<key>`, and that route streams the object out of R2
+  server-side, so files arrive over the app's own origin — the same
+  origin the student already loaded the page from, and therefore
+  impossible to block without blocking the whole site. Don't "optimize"
+  this back into direct bucket links to save a hop; the hop is the
+  point. A custom domain on the bucket would also work and would drop
+  the hop, but it needs a domain nobody has yet.
   A Render persistent disk is not the way out either — disks aren't
   offered on the free instance type. Fixing this means creating a
   Cloudflare R2 bucket and setting all five `R2_*` vars;
   `isCloudStorageConfigured()` only switches over when every one of
   them is non-empty, so a partial fill silently changes nothing.
-- **Never migrate the R2 bucket to a different Cloudflare account —
-  hand the account over instead.** Whichever account R2 gets enabled
-  on is meant to be temporary (it starts on the developer's personal
-  account, to be handed to the real teacher later), and the tempting
-  move is to make a bucket in the new account and copy the objects
-  across. Don't. `uploadBuffer` returns `${R2_PUBLIC_URL}/${key}` and
-  that **absolute** URL is what gets persisted — in
+- **Handing R2 to the real teacher's account: transfer the account,
+  don't migrate the bucket.** The account R2 lives on is the
+  developer's personal one and is meant to be temporary. Because
+  stored URLs are now app-relative (`/api/files/<key>`, see above),
+  swapping buckets no longer breaks existing links — but it still
+  means copying every object, so the cheap path is unchanged: invite
+  the teacher's email under Cloudflare's Manage Account → Members,
+  promote them to Super Administrator, and step down. The bucket never
+  moves and nothing needs re-pointing.
+  If a real migration is ever forced: `rclone sync` between the two S3
+  endpoints, then update the `R2_*` env vars. Nothing in the database
+  needs rewriting. Two older shapes may still exist in
   `material_uploads."fileUrl"`, `microscope_slides."slideImageUrl"`
-  and `questions."imageUrl"`. Change the public URL and every existing
-  link breaks at once; worse, `deleteByUrl` only recognizes a file
-  whose URL starts with the *current* prefix, so the old objects also
-  stop being deletable through the app and linger as orphans.
-  The agreed plan is therefore: invite the teacher's email under
-  Cloudflare's Manage Account → Members, promote them to Super
-  Administrator, and step down. The bucket never moves, the URLs never
-  change, no data migration happens. If a real migration ever becomes
-  unavoidable, it is: copy objects (`rclone sync` between the two S3
-  endpoints), update the five env vars, then rewrite the stored
-  prefixes with three `UPDATE ... replace(...)` statements over the
-  columns listed above. A custom domain in front of the bucket would
-  sidestep the whole problem, and is worth doing if a Cloudflare-managed
-  domain ever exists.
+  and `questions."imageUrl"` — an absolute `r2.dev` URL and a
+  `/uploads/...` path — and `deleteByUrl` still understands both, so
+  don't delete that compatibility branch while any such row survives.
+  The token type matters here too — see the R2 note above for why it
+  has to be an Account token.
 - **`express-rate-limit` collapses everyone behind the same reverse
   proxy into one bucket** unless `app.set('trust proxy', N)` matches
   the actual number of proxy hops — get this wrong and an entire

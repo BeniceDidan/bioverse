@@ -2,6 +2,7 @@
 
 import { CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveFileUrl } from "@/lib/resolve-file-url";
 import type { QuizQuestionForTaking, SubmitAnswerResult } from "@/lib/quiz-types";
 
 export function MultipleChoiceQuestion({
@@ -23,7 +24,7 @@ export function MultipleChoiceQuestion({
         <div className="overflow-hidden rounded-2xl border border-border bg-black/5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={question.imageUrl.startsWith("http") ? question.imageUrl : `${process.env.NEXT_PUBLIC_API_URL}${question.imageUrl}`}
+            src={resolveFileUrl(question.imageUrl)}
             alt="Gambar soal"
             className="block w-full"
           />

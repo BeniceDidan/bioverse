@@ -11,6 +11,7 @@ import { microscopeRouter, teacherMicroscopeRouter } from "./modules/microscope/
 import { quizRouter, teacherQuizRouter } from "./modules/quiz/quiz.routes";
 import { videoRouter, teacherVideoRouter } from "./modules/video/video.routes";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
+import { filesRouter } from "./modules/files/files.routes";
 
 export function createApp() {
   const app = express();
@@ -46,6 +47,7 @@ export function createApp() {
   app.use("/api/video", videoRouter);
   app.use("/api/teacher/video", teacherVideoRouter);
   app.use("/api/dashboard", dashboardRouter);
+  app.use("/api/files", filesRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
