@@ -31,6 +31,67 @@ materialsRouter.get(
   })
 );
 
+/**
+ * Searching only title + description missed the point of this app: the
+ * substance lives in the AI-expanded `contentBody`, so a student searching
+ * the very topic they are reading about ("jaringan epitel") could get zero
+ * hits whenever those words happened not to be in the heading. Matching runs
+ * in Postgres rather than in the browser so the body never has to be shipped
+ * to the client just to be searched.
+ */
+materialsRouter.get(
+  "/search",
+  asyncHandler(async (req, res) => {
+    const q = String(req.query.q ?? "").trim();
+    if (q.length < 2) {
+      return res.status(200).json({ success: true, data: { results: [], query: q } });
+    }
+
+    const sections = await prisma.materialSection.findMany({
+      where: {
+        isPublished: true,
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+          { contentBody: { contains: q, mode: "insensitive" } },
+        ],
+      },
+      orderBy: { order: "asc" },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        estimatedMinutes: true,
+        contentBody: true,
+      },
+    });
+
+    const results = sections.map(({ contentBody, ...section }) => {
+      const inTitle = section.title.toLowerCase().includes(q.toLowerCase());
+      const inDescription = section.description.toLowerCase().includes(q.toLowerCase());
+      return {
+        ...section,
+        matchedIn: inTitle ? "title" : inDescription ? "description" : "content",
+        // A short window around the hit, so the student can see *why* this
+        // section matched when the words aren't in the title.
+        snippet: inTitle || inDescription ? null : buildSnippet(contentBody ?? "", q),
+      };
+    });
+
+    res.status(200).json({ success: true, data: { results, query: q } });
+  })
+);
+
+function buildSnippet(body: string, q: string): string | null {
+  const plain = body.replace(/[#*_`>]/g, "").replace(/\s+/g, " ").trim();
+  const at = plain.toLowerCase().indexOf(q.toLowerCase());
+  if (at === -1) return null;
+  const start = Math.max(0, at - 60);
+  const end = Math.min(plain.length, at + q.length + 90);
+  return `${start > 0 ? "…" : ""}${plain.slice(start, end).trim()}${end < plain.length ? "…" : ""}`;
+}
+
 materialsRouter.get(
   "/sections/:slug",
   asyncHandler(async (req, res) => {
