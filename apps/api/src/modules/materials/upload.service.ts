@@ -47,7 +47,6 @@ async function extractAndStoreText(uploadId: string, buffer: Buffer) {
       data: { extractedText: result.text, status: "READY_TO_EXPAND", errorMessage: null },
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error("[extractAndStoreText] PDF parse failed:", err);
     return prisma.materialUpload.update({
       where: { id: uploadId },
@@ -170,7 +169,6 @@ export async function expandUpload(uploadId: string, teacherId: string) {
       include: { materialSection: true },
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error("[expandUpload] AI expand failed:", err);
     const isMalformedJson = err instanceof SyntaxError;
     const errorMessage = isMalformedJson

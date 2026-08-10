@@ -4,6 +4,9 @@ import { ApiError } from "../utils/ApiError";
 import { verifyAccessToken } from "../utils/jwt";
 
 declare global {
+  // Augmenting Express's own Request type is only possible through its
+  // namespace — there is no ES-module equivalent to declare here.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: { id: string; role: Role };

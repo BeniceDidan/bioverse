@@ -29,7 +29,6 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   }
 
   if (!env.isProduction) {
-    // eslint-disable-next-line no-console
     console.error(err);
   }
 

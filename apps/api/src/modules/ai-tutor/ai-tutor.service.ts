@@ -138,7 +138,6 @@ async function generateReply(
     const reply = await generateChatReply(systemPrompt, history);
     return reply || "Maaf, AI Tutor tidak dapat memberikan jawaban saat ini. Silakan coba lagi.";
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error("[ai-tutor] generateChatReply failed:", err);
     return "Maaf, terjadi kendala saat menghubungi AI Tutor. Silakan coba lagi sebentar lagi.";
   }

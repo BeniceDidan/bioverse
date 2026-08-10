@@ -29,7 +29,6 @@ const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 
 if (!r2Client) {
   if (env.isProduction) {
-    // eslint-disable-next-line no-console
     console.warn(
       "[storage] R2_* env vars are not fully set — falling back to local disk. " +
         "Uploaded files WILL be lost on the next deploy/restart until R2 is configured."

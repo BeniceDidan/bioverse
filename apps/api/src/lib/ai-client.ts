@@ -8,8 +8,10 @@ export const AI_MODEL = "gemini-3.1-flash-lite";
 
 // Untyped: @google/genai is ESM-only, statically importing its types from this
 // CommonJS module requires a resolution-mode attribute TS won't emit for .ts files.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see note above
 let clientPromise: Promise<any> | null = null;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see note above
 function getClient(): Promise<any> {
   if (!clientPromise) {
     clientPromise = import("@google/genai").then(({ GoogleGenAI }) => new GoogleGenAI({ apiKey: env.geminiApiKey }));

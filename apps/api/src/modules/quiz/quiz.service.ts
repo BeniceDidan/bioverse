@@ -239,7 +239,10 @@ async function getOwnedAttempt(attemptId: string, userId: string) {
 function gradeAnswer(
   question: { type: string; points: number; choices: { id: string; isCorrect: boolean; matchKey: string | null; matchGroup: string | null }[] },
   selectedChoiceIds: unknown,
-  textAnswer: string | null
+  // Kept in the signature to mirror the stored answer shape, but unread:
+  // ESSAY is deliberately left ungraded here (null / 0 points) for a human
+  // to score, and no other question type carries free text.
+  _textAnswer: string | null
 ): { isCorrect: boolean | null; pointsAwarded: number } {
   if (question.type === "ESSAY") {
     return { isCorrect: null, pointsAwarded: 0 };
