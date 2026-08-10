@@ -84,6 +84,20 @@ export async function deleteSlide(slideId: string, teacherId: string) {
   await deleteByUrl(slide.slideImageUrl).catch(() => {});
 }
 
+/** Clears every preparat this teacher owns, taking each slide image out of
+ * storage too so the bucket doesn't accumulate orphans. */
+export async function deleteAllSlides(teacherId: string) {
+  const slides = await prisma.microscopeSlide.findMany({
+    where: { teacherId },
+    select: { id: true, slideImageUrl: true },
+  });
+  if (slides.length === 0) return 0;
+
+  await prisma.microscopeSlide.deleteMany({ where: { teacherId } });
+  await Promise.all(slides.map((s) => deleteByUrl(s.slideImageUrl).catch(() => {})));
+  return slides.length;
+}
+
 interface HotspotInput {
   xPercent: number;
   yPercent: number;

@@ -40,6 +40,11 @@ export const deleteUpload = asyncHandler(async (req: Request, res: Response) => 
   res.status(200).json({ success: true, data: { message: "Riwayat upload dihapus" } });
 });
 
+export const deleteAllUploads = asyncHandler(async (req: Request, res: Response) => {
+  const count = await uploadService.deleteAllUploads(req.user!.id);
+  res.status(200).json({ success: true, data: { count, message: `${count} materi beserta riwayatnya dihapus` } });
+});
+
 export const updateSection = asyncHandler(async (req: Request, res: Response) => {
   const { title, description } = req.body;
   if (!title && !description) throw ApiError.badRequest("Judul atau deskripsi wajib diisi");

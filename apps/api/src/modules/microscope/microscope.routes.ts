@@ -16,6 +16,8 @@ teacherMicroscopeRouter.get("/slides/:id", microscopeController.getSlide);
 teacherMicroscopeRouter.patch("/slides/:id", csrfProtection, microscopeController.updateSlide);
 teacherMicroscopeRouter.post("/slides/:id/publish", csrfProtection, microscopeController.publishSlide);
 teacherMicroscopeRouter.post("/slides/:id/unpublish", csrfProtection, microscopeController.unpublishSlide);
+// Before "/slides/:id" so "all" isn't mistaken for a slide id.
+teacherMicroscopeRouter.delete("/slides/all", csrfProtection, microscopeController.deleteAllSlides);
 teacherMicroscopeRouter.delete("/slides/:id", csrfProtection, microscopeController.deleteSlide);
 
 teacherMicroscopeRouter.post(

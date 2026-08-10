@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { ApiError } from "../../utils/ApiError";
 
 function scorePercent(score: number | null, maxScore: number | null): number | null {
   if (score === null || maxScore === null || maxScore === 0) return null;
@@ -75,6 +76,25 @@ export async function getStudentDashboard(userId: string) {
     recentAttempts: scoredAttempts,
     recommendation,
   };
+}
+
+/**
+ * Removes a student account entirely — used when a cohort finishes and the
+ * class is handed to new students. Every User relation cascades, so the
+ * account's attempts, answers, progress, bookmarks and chat history go with
+ * it. Restricted to STUDENT rows so a teacher can never delete a colleague
+ * (or themselves) through this path.
+ */
+export async function deleteStudent(studentId: string) {
+  const student = await prisma.user.findUnique({
+    where: { id: studentId },
+    select: { id: true, name: true, role: true },
+  });
+  if (!student || student.role !== "STUDENT") {
+    throw ApiError.notFound("Siswa tidak ditemukan");
+  }
+  await prisma.user.delete({ where: { id: studentId } });
+  return student.name;
 }
 
 export async function getTeacherDashboard() {

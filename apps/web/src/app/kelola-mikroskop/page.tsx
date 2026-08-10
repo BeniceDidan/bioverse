@@ -98,6 +98,16 @@ export default function KelolaMikroskopPage() {
     onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus preparat"),
   });
 
+  const deleteAllMutation = useMutation({
+    mutationFn: () => apiClient.delete<{ message: string }>("/api/teacher/microscope/slides/all"),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-microscope-slides"] });
+    },
+    onError: (err) =>
+      setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus semua preparat"),
+  });
+
   const editMutation = useMutation({
     mutationFn: ({
       id,
@@ -133,6 +143,13 @@ export default function KelolaMikroskopPage() {
   function handleDelete(slide: MicroscopeSlideSummary) {
     const ok = window.confirm(`Hapus preparat "${slide.tissueName}"? Semua label pada preparat ini juga akan terhapus.`);
     if (ok) deleteMutation.mutate(slide.id);
+  }
+
+  function handleDeleteAll() {
+    const ok = window.confirm(
+      `Hapus SEMUA ${slides.length} preparat beserta seluruh labelnya? Tindakan ini tidak bisa dibatalkan.`
+    );
+    if (ok) deleteAllMutation.mutate();
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -236,7 +253,23 @@ export default function KelolaMikroskopPage() {
       </Card>
 
       <div className="mt-10 space-y-3">
-        <h2 className="font-heading font-semibold text-foreground">Preparat Anda</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-heading font-semibold text-foreground">
+            Preparat Anda{" "}
+            {slides.length > 0 && <span className="text-sm font-normal text-muted-foreground">({slides.length})</span>}
+          </h2>
+          {slides.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10"
+              onClick={handleDeleteAll}
+              loading={deleteAllMutation.isPending}
+            >
+              <Trash2 className="size-4" /> Hapus Semua
+            </Button>
+          )}
+        </div>
 
         {actionError && (
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">

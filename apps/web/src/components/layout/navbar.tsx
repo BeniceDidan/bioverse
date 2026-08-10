@@ -9,6 +9,7 @@ import {
   X,
   LogOut,
   User as UserIcon,
+  Home,
   BookOpen,
   Microscope,
   Bot,
@@ -38,6 +39,9 @@ import { BioVerseLogo } from "./bioverse-logo";
 const APPLE_EASE = [0.32, 0.72, 0, 1] as const;
 
 const MAIN_LINKS = [
+  // The logo also links home, but it reads as branding rather than a control,
+  // so returning to the landing page needs an item people can actually find.
+  { href: "/", label: "Beranda", icon: Home },
   {
     href: "/materi",
     label: "Materi",

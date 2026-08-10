@@ -32,6 +32,8 @@ teacherMaterialsRouter.post(
   uploadPdf,
   uploadController.replaceUploadFile
 );
+// Declared before "/uploads/:id" so "all" is never read as an upload id.
+teacherMaterialsRouter.delete("/uploads/all", csrfProtection, uploadController.deleteAllUploads);
 teacherMaterialsRouter.delete("/uploads/:id", csrfProtection, uploadController.deleteUpload);
 teacherMaterialsRouter.patch("/sections/:id", csrfProtection, uploadController.updateSection);
 teacherMaterialsRouter.delete("/sections/:id", csrfProtection, uploadController.deleteSection);

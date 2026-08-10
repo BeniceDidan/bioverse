@@ -50,6 +50,11 @@ export const deleteSlide = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json({ success: true, data: { message: "Preparat dihapus" } });
 });
 
+export const deleteAllSlides = asyncHandler(async (req: Request, res: Response) => {
+  const count = await microscopeService.deleteAllSlides(req.user!.id);
+  res.status(200).json({ success: true, data: { count, message: `${count} preparat dihapus` } });
+});
+
 export const createHotspot = asyncHandler(async (req: Request, res: Response) => {
   const hotspot = await microscopeService.createHotspot(req.params.id, req.user!.id, req.body);
   res.status(201).json({ success: true, data: { hotspot } });

@@ -127,6 +127,13 @@ export async function deleteQuiz(quizId: string, teacherId: string) {
   await prisma.quiz.delete({ where: { id: quizId } });
 }
 
+/** Clears every quiz this teacher owns. Returns how many were removed so the
+ * UI can report it rather than leaving the teacher guessing. */
+export async function deleteAllQuizzes(teacherId: string) {
+  const { count } = await prisma.quiz.deleteMany({ where: { teacherId } });
+  return count;
+}
+
 export async function createQuestion(quizId: string, teacherId: string, input: ManualQuestionInput) {
   await getOwnedQuiz(quizId, teacherId);
   const count = await prisma.question.count({ where: { quizId } });

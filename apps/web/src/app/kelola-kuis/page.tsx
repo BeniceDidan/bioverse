@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, ListChecks, CheckCircle2, AlertCircle, Pencil, HelpCircle } from "lucide-react";
+import { Sparkles, ListChecks, CheckCircle2, AlertCircle, Pencil, HelpCircle, Trash2, Check, X } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import type { MaterialSectionOption } from "@/lib/microscope-types";
@@ -73,6 +73,66 @@ export default function KelolaKuisPage() {
     },
     onError: (err) => setFormError(err instanceof ApiClientError ? err.message : "Gagal membuat kuis"),
   });
+
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPassingScore, setEditPassingScore] = useState("70");
+
+  const editMutation = useMutation({
+    mutationFn: (payload: { id: string; title: string; description: string; passingScore: number }) =>
+      apiClient.patch(`/api/teacher/quiz/quizzes/${payload.id}`, {
+        title: payload.title,
+        description: payload.description,
+        passingScore: payload.passingScore,
+      }),
+    onSuccess: () => {
+      setActionError(null);
+      setEditingId(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-quizzes"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menyimpan perubahan"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/teacher/quiz/quizzes/${id}`),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-quizzes"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus kuis"),
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: () => apiClient.delete<{ message: string }>("/api/teacher/quiz/quizzes/all"),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-quizzes"] });
+    },
+    onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus semua kuis"),
+  });
+
+  function startEdit(quiz: QuizSummary) {
+    setEditingId(quiz.id);
+    setEditTitle(quiz.title);
+    setEditDescription(quiz.description);
+    setEditPassingScore(String(quiz.passingScore ?? 70));
+  }
+
+  function handleDeleteQuiz(quiz: QuizSummary) {
+    const ok = window.confirm(
+      `Hapus kuis "${quiz.title}"? Semua soal dan hasil pengerjaan siswa pada kuis ini ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
+    );
+    if (ok) deleteMutation.mutate(quiz.id);
+  }
+
+  function handleDeleteAllQuizzes() {
+    const ok = window.confirm(
+      `Hapus SEMUA ${quizzesQuery.data?.quizzes.length ?? 0} kuis beserta soal dan hasil pengerjaan siswanya? Tindakan ini tidak bisa dibatalkan.`
+    );
+    if (ok) deleteAllMutation.mutate();
+  }
 
   function toggleType(value: string) {
     setTypes((prev) => (prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]));
@@ -211,28 +271,129 @@ export default function KelolaKuisPage() {
       </Card>
 
       <div className="mt-10 space-y-3">
-        <h2 className="font-heading font-semibold text-foreground">Kuis Anda</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-heading font-semibold text-foreground">
+            Kuis Anda{" "}
+            {quizzes.length > 0 && <span className="text-sm font-normal text-muted-foreground">({quizzes.length})</span>}
+          </h2>
+          {quizzes.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10"
+              onClick={handleDeleteAllQuizzes}
+              loading={deleteAllMutation.isPending}
+            >
+              <Trash2 className="size-4" /> Hapus Semua
+            </Button>
+          )}
+        </div>
+
+        {actionError && (
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+        )}
+
         {quizzes.map((quiz) => (
           <Card key={quiz.id}>
-            <CardContent className="flex flex-wrap items-center gap-4 p-4">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-foreground">{quiz.title}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {quiz.materialSection?.title ?? "Materi telah dihapus"}
-                </p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant={quiz.isPublished ? "success" : "muted"}>
-                    {quiz.isPublished ? <CheckCircle2 className="size-3" /> : null}
-                    {quiz.isPublished ? "Terbit" : "Draft"}
-                  </Badge>
-                  <Badge variant="outline">{quiz._count?.questions ?? 0} soal</Badge>
-                </div>
+            {/* Same stacking rule as the materi card: the action cluster is
+                wide enough to squeeze the title column to nothing on a phone. */}
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="min-w-0 sm:flex-1">
+                {editingId === quiz.id ? (
+                  <div className="space-y-2">
+                    <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Judul kuis" />
+                    <Input
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="Deskripsi kuis"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`pass-${quiz.id}`} className="text-xs text-muted-foreground">
+                        Nilai kelulusan
+                      </Label>
+                      <Input
+                        id={`pass-${quiz.id}`}
+                        type="number"
+                        min={0}
+                        max={100}
+                        className="w-24"
+                        value={editPassingScore}
+                        onChange={(e) => setEditPassingScore(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="truncate font-medium text-foreground">{quiz.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {quiz.materialSection?.title ?? "Materi telah dihapus"}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <Badge variant={quiz.isPublished ? "success" : "muted"}>
+                        {quiz.isPublished ? <CheckCircle2 className="size-3" /> : null}
+                        {quiz.isPublished ? "Terbit" : "Draft"}
+                      </Badge>
+                      <Badge variant="outline">{quiz._count?.questions ?? 0} soal</Badge>
+                      <Badge variant="outline">Lulus: {quiz.passingScore ?? 70}</Badge>
+                    </div>
+                  </>
+                )}
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/kelola-kuis/${quiz.id}`}>
-                  <Pencil className="size-4" /> Kelola
-                </Link>
-              </Button>
+
+              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                {editingId === quiz.id ? (
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        editMutation.mutate({
+                          id: quiz.id,
+                          title: editTitle.trim(),
+                          description: editDescription.trim(),
+                          passingScore: Number(editPassingScore) || 70,
+                        })
+                      }
+                      loading={editMutation.isPending}
+                    >
+                      <Check className="size-4" /> Simpan
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>
+                      <X className="size-4" /> Batal
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/kelola-kuis/${quiz.id}`}>
+                        <ListChecks className="size-4" /> Kelola Soal
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Edit judul, deskripsi & nilai kelulusan"
+                      aria-label="Edit judul, deskripsi & nilai kelulusan"
+                      onClick={() => startEdit(quiz)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Hapus kuis ini"
+                      aria-label="Hapus kuis ini"
+                      onClick={() => handleDeleteQuiz(quiz)}
+                      loading={deleteMutation.isPending && deleteMutation.variables === quiz.id}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}

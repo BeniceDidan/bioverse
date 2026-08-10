@@ -14,6 +14,8 @@ import {
   Eye,
   Lightbulb,
 } from "lucide-react";
+import { getMasteryStatus, toScoreOutOf100 } from "@bioverse/shared";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient } from "@/lib/api-client";
 import type { QuizForTaking, QuizAttempt, SubmitAnswerResult, QuizQuestionForTaking } from "@/lib/quiz-types";
@@ -65,6 +67,11 @@ export default function TakeQuizPage() {
   const quiz = quizQuery.data?.quiz;
   const questions = useMemo(() => quiz?.questions ?? [], [quiz]);
   const currentQuestion: QuizQuestionForTaking | undefined = questions[currentIndex];
+
+  // Raw points are meaningless to a student ("120 / 120" tells them nothing),
+  // so the result is always expressed out of 100 and paired with what to do next.
+  const scoreOutOf100 = toScoreOutOf100(attempt?.score ?? null, attempt?.maxScore ?? null);
+  const mastery = getMasteryStatus(scoreOutOf100, quiz?.passingScore ?? 75);
 
   const startMutation = useMutation({
     mutationFn: () => apiClient.post<{ attempt: QuizAttempt }>(`/api/quiz/quizzes/${params.id}/attempts`),
@@ -284,16 +291,18 @@ export default function TakeQuizPage() {
       {phase === "finished" && attempt && (
         <div className="mt-6">
           <div className="text-center">
-            <span className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <span
+              className={cn(
+                "mx-auto flex size-16 items-center justify-center rounded-2xl",
+                mastery.tone === "success" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+              )}
+            >
               <Trophy className="size-8" />
             </span>
-            <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">
-              {(attempt.score ?? 0) >= (quiz.passingScore / 100) * (attempt.maxScore ?? 1) ? "Selamat, Lulus!" : "Terus Berlatih!"}
-            </h1>
-            <p className="mt-2 text-4xl font-bold text-primary">
-              {attempt.score} / {attempt.maxScore}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">Nilai kelulusan: {quiz.passingScore}%</p>
+            <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">{mastery.studentHeadline}</h1>
+            <p className="mt-2 text-4xl font-bold text-primary">{scoreOutOf100 ?? 0} / 100</p>
+            <p className="mt-1 text-sm text-muted-foreground">Nilai kelulusan: {quiz.passingScore}</p>
+            <p className="mx-auto mt-4 max-w-md text-sm text-muted-foreground">{mastery.studentMessage}</p>
 
             <div className="mt-6 flex justify-center gap-3">
               <Button variant="outline" onClick={() => setShowReview((v) => !v)}>

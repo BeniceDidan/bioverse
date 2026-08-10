@@ -59,6 +59,11 @@ export const deleteQuiz = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json({ success: true, data: { message: "Kuis dihapus" } });
 });
 
+export const deleteAllQuizzes = asyncHandler(async (req: Request, res: Response) => {
+  const count = await quizService.deleteAllQuizzes(req.user!.id);
+  res.status(200).json({ success: true, data: { count, message: `${count} kuis dihapus` } });
+});
+
 export const createQuestion = asyncHandler(async (req: Request, res: Response) => {
   const { type, prompt, explanation, points, imageUrl, choices, pairs } = req.body;
   if (!type || !prompt || !explanation) {

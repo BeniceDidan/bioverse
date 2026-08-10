@@ -13,6 +13,8 @@ teacherQuizRouter.get("/quizzes/:id", quizController.getQuiz);
 teacherQuizRouter.patch("/quizzes/:id", csrfProtection, quizController.updateQuiz);
 teacherQuizRouter.post("/quizzes/:id/publish", csrfProtection, quizController.publishQuiz);
 teacherQuizRouter.post("/quizzes/:id/unpublish", csrfProtection, quizController.unpublishQuiz);
+// Before "/quizzes/:id" so "all" isn't mistaken for a quiz id.
+teacherQuizRouter.delete("/quizzes/all", csrfProtection, quizController.deleteAllQuizzes);
 teacherQuizRouter.delete("/quizzes/:id", csrfProtection, quizController.deleteQuiz);
 teacherQuizRouter.post("/quizzes/:id/questions", csrfProtection, quizController.createQuestion);
 teacherQuizRouter.patch("/questions/:questionId", csrfProtection, quizController.updateQuestion);

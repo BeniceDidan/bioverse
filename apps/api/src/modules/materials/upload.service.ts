@@ -238,6 +238,28 @@ export async function deleteUploadRecord(uploadId: string, teacherId: string) {
   await deleteByUrl(upload.fileUrl).catch(() => {});
 }
 
+/**
+ * Clears every upload this teacher owns, along with the submateri each one
+ * produced and its stored PDF. Same reasoning as the single delete: the PDF
+ * *is* the materi from a teacher's point of view, so leaving the generated
+ * section published after "delete everything" would be a nasty surprise.
+ */
+export async function deleteAllUploads(teacherId: string) {
+  const uploads = await prisma.materialUpload.findMany({
+    where: { teacherId },
+    select: { id: true, fileUrl: true, materialSectionId: true },
+  });
+  if (uploads.length === 0) return 0;
+
+  const sectionIds = uploads.map((u) => u.materialSectionId).filter((id): id is string => !!id);
+  if (sectionIds.length) {
+    await prisma.materialSection.deleteMany({ where: { id: { in: sectionIds } } });
+  }
+  await prisma.materialUpload.deleteMany({ where: { teacherId } });
+  await Promise.all(uploads.map((u) => deleteByUrl(u.fileUrl).catch(() => {})));
+  return uploads.length;
+}
+
 export async function updateSection(sectionId: string, data: { title?: string; description?: string }) {
   const section = await prisma.materialSection.findUnique({ where: { id: sectionId } });
   if (!section) throw ApiError.notFound("Submateri tidak ditemukan");

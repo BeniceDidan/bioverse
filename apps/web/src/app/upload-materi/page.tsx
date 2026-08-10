@@ -130,6 +130,17 @@ export default function UploadMateriPage() {
     onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus materi"),
   });
 
+  const deleteAllUploadsMutation = useMutation({
+    mutationFn: () => apiClient.delete<{ message: string }>("/api/teacher/materials/uploads/all"),
+    onSuccess: () => {
+      setActionError(null);
+      queryClient.invalidateQueries({ queryKey: ["teacher-uploads"] });
+      queryClient.invalidateQueries({ queryKey: ["teacher-sections"] });
+    },
+    onError: (err) =>
+      setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus semua materi"),
+  });
+
   const deleteOrphanSectionMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/api/teacher/materials/sections/${id}`),
     onSuccess: () => {
@@ -175,6 +186,13 @@ export default function UploadMateriPage() {
       : `Hapus riwayat upload "${upload.fileName}" dari daftar ini?`;
     const ok = window.confirm(message);
     if (ok) deleteUploadMutation.mutate(upload.id);
+  }
+
+  function handleDeleteAllUploads() {
+    const ok = window.confirm(
+      `Hapus SEMUA ${uploads.length} materi beserta riwayat unggahnya? Submateri yang dihasilkan — termasuk preparat mikroskop dan video yang terkait — ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
+    );
+    if (ok) deleteAllUploadsMutation.mutate();
   }
 
   function handleDeleteOrphanSection(section: MaterialSectionOption) {
@@ -304,6 +322,22 @@ export default function UploadMateriPage() {
 
       {/* Upload list */}
       <div className="mt-10 space-y-3">
+        {uploads.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-heading font-semibold text-foreground">
+              Materi Anda <span className="text-sm font-normal text-muted-foreground">({uploads.length})</span>
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10"
+              onClick={handleDeleteAllUploads}
+              loading={deleteAllUploadsMutation.isPending}
+            >
+              <Trash2 className="size-4" /> Hapus Semua
+            </Button>
+          </div>
+        )}
         {uploads.map((upload) => (
           <Card key={upload.id}>
             {/* Stacked on phones: the action cluster is ~230px wide and
