@@ -306,27 +306,33 @@ export default function UploadMateriPage() {
       <div className="mt-10 space-y-3">
         {uploads.map((upload) => (
           <Card key={upload.id}>
-            <CardContent className="flex flex-wrap items-center gap-4 p-5">
-              <FileText className="size-8 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-foreground">{upload.fileName}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant={STATUS_LABEL[upload.status].variant}>
-                    {upload.status === "EXPANDING" && <Loader2 className="size-3 animate-spin" />}
-                    {STATUS_LABEL[upload.status].label}
-                  </Badge>
-                  {upload.materialSection?.isPublished && (
-                    <Badge variant="success">
-                      <CheckCircle2 className="size-3" /> Sudah terbit
+            {/* Stacked on phones: the action cluster is ~230px wide and
+                shrink-0, so keeping everything on one row squeezed the title
+                column to a few pixels and its badges spilled over the buttons,
+                leaving delete effectively untappable. */}
+            <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="flex min-w-0 items-center gap-4 sm:flex-1">
+                <FileText className="size-8 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground">{upload.fileName}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <Badge variant={STATUS_LABEL[upload.status].variant}>
+                      {upload.status === "EXPANDING" && <Loader2 className="size-3 animate-spin" />}
+                      {STATUS_LABEL[upload.status].label}
                     </Badge>
+                    {upload.materialSection?.isPublished && (
+                      <Badge variant="success">
+                        <CheckCircle2 className="size-3" /> Sudah terbit
+                      </Badge>
+                    )}
+                  </div>
+                  {upload.errorMessage && (
+                    <p className="mt-1 text-xs text-destructive">{upload.errorMessage}</p>
                   )}
                 </div>
-                {upload.errorMessage && (
-                  <p className="mt-1 text-xs text-destructive">{upload.errorMessage}</p>
-                )}
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                 {(upload.status === "READY_TO_EXPAND" || upload.status === "FAILED") && (
                   <Button
                     size="sm"
