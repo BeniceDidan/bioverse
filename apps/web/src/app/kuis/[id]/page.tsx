@@ -39,7 +39,7 @@ type Phase = "intro" | "taking" | "finished";
 export default function TakeQuizPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { user, status } = useAuthStore();
+  const { status } = useAuthStore();
   const queryClient = useQueryClient();
 
   useEffect(() => {
