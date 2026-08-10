@@ -9,9 +9,16 @@ import crypto from "node:crypto";
 
 // When an allowlist is configured, only those emails may ever become TEACHER —
 // everyone else is registered as STUDENT regardless of what the client requests.
-// An empty allowlist (e.g. local dev) leaves the requested role unrestricted.
+//
+// An empty allowlist leaves the requested role unrestricted, which is the
+// convenience we want in local dev but a self-service teacher account in
+// production: anyone could POST role:"TEACHER" and get the whole teacher
+// surface (authoring and publishing materi, quizzes, slides, videos). Since
+// TEACHER_ALLOWLIST_EMAILS is set by hand in Render's dashboard, forgetting it
+// — or having it wiped by an env change — must not silently open that door, so
+// production falls back to STUDENT instead of trusting the client.
 function resolveRegistrationRole(input: RegisterInput): "STUDENT" | "TEACHER" {
-  if (env.teacherAllowlist.length === 0) return input.role;
+  if (env.teacherAllowlist.length === 0) return env.isProduction ? "STUDENT" : input.role;
   return env.teacherAllowlist.includes(input.email.toLowerCase()) ? "TEACHER" : "STUDENT";
 }
 
