@@ -142,10 +142,12 @@ gotcha below before loosening this.
   `GEMINI_API_KEY`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`,
   `NODE_ENV`, `PORT`, `TEACHER_ALLOWLIST_EMAILS`, `WEB_ORIGIN` — and
   not one `R2_*` among them. So every teacher-uploaded PDF and
-  microscope image on the live site disappears at the next deploy, and
-  the storage module silently falls back to local disk (it does log a
-  warning at startup in production; check the deploy log for
-  `[storage]` if in doubt).
+  microscope image on the live site disappears at the next deploy. The
+  storage module says so itself on every boot — the 2026-08-10 deploy
+  log carries
+  `[storage] R2_* env vars are not fully set — falling back to local disk`
+  right before the listening line. When R2 is finally wired up, that
+  line disappearing is the proof it took effect.
   A Render persistent disk is not the way out either — disks aren't
   offered on the free instance type. Fixing this means creating a
   Cloudflare R2 bucket and setting all five `R2_*` vars;
@@ -165,6 +167,22 @@ gotcha below before loosening this.
   `module`/`moduleResolution: node16` and removing a deprecated
   `baseUrl` in favor of relative paths. If a build fails on Render but
   passes locally, suspect a TS/module-resolution mismatch first.
+- **The API and its database sit on opposite sides of the planet.**
+  Production Postgres is **Neon** (`neondb`, host
+  `ep-soft-silence-auaq59ca.c-10.us-east-1.aws.neon.tech`) in
+  **us-east-1**, while the Render service runs in **Singapore** — read
+  off the deploy log on 2026-08-10. Every query pays a cross-Pacific
+  round trip, so an endpoint issuing a handful of sequential queries
+  spends most of its time waiting on the network, not on Postgres.
+  Worth knowing before optimizing anything query-shaped: batching
+  round trips helps far more than tuning individual queries, and
+  moving one of the two regions would help most of all.
+- **Neon's free tier suspends the compute when idle**, which shows up
+  in the API log as
+  `prisma:error ... terminating connection due to administrator command`.
+  It is the database going to sleep, not a crash or a Prisma bug — but
+  it stacks with Render's own 15-minute spin-down, so the first
+  request after a quiet spell can be waiting on *two* cold starts.
 
 ## Environment variables
 
@@ -208,8 +226,11 @@ steps below used to say. `NEXT_PUBLIC_API_URL` already defaults to
   `dashboard.render.com/web/srv-d9qkvg3m8hqs738ltkhg/env` (that page
   opens with a "Create environment group" button, which is *not* what
   you want — the variable table is below it).
-- **Database:** PostgreSQL, connection string set directly in Render's
-  dashboard env vars, not version-controlled in this repo.
+- **Database:** **Neon** serverless Postgres (`neondb`, us-east-1),
+  not a Render-hosted database — identified from the deploy log, since
+  the connection string lives only in Render's dashboard env vars and
+  is not version-controlled here. See the latency and idle-suspend
+  gotchas above.
 - **Pushing to `main` does auto-deploy the API** — confirmed on
   2026-08-10, when a push showed up as "Deploy live for `<sha>`" in the
   service's Events tab without anyone touching the dashboard. The same
