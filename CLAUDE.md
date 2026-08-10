@@ -136,10 +136,21 @@ gotcha below before loosening this.
   engines range without re-testing the build on Render itself, not
   just locally.
 - **Uploaded files are lost on every Render redeploy** unless the
-  `R2_*` env vars are set (ephemeral disk on the free tier). As of the
-  commit that wired up R2 support, it was **not yet configured in
-  production** — verify current state (e.g. check Render's dashboard
-  env vars) before assuming uploads persist live.
+  `R2_*` env vars are set (ephemeral disk on the free tier).
+  **Checked on 2026-08-10: still unconfigured in production.** The
+  service's env list holds exactly eight variables — `DATABASE_URL`,
+  `GEMINI_API_KEY`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`,
+  `NODE_ENV`, `PORT`, `TEACHER_ALLOWLIST_EMAILS`, `WEB_ORIGIN` — and
+  not one `R2_*` among them. So every teacher-uploaded PDF and
+  microscope image on the live site disappears at the next deploy, and
+  the storage module silently falls back to local disk (it does log a
+  warning at startup in production; check the deploy log for
+  `[storage]` if in doubt).
+  A Render persistent disk is not the way out either — disks aren't
+  offered on the free instance type. Fixing this means creating a
+  Cloudflare R2 bucket and setting all five `R2_*` vars;
+  `isCloudStorageConfigured()` only switches over when every one of
+  them is non-empty, so a partial fill silently changes nothing.
 - **`express-rate-limit` collapses everyone behind the same reverse
   proxy into one bucket** unless `app.set('trust proxy', N)` matches
   the actual number of proxy hops — get this wrong and an entire
@@ -171,8 +182,10 @@ gotcha below before loosening this.
   allows self-registering as either role (old behavior), must be set
   in production.
 - `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` /
-  `R2_BUCKET_NAME` / `R2_PUBLIC_URL` — optional; without them, uploads
-  fall back to local disk.
+  `R2_BUCKET_NAME` / `R2_PUBLIC_URL` — optional locally, all five or
+  nothing; without the full set, uploads fall back to local disk. Not
+  set in production as of 2026-08-10 — see the gotcha above for why
+  that matters and why a Render disk isn't the alternative.
 
 `apps/web/.env.local` — **not needed locally, and there is no
 `apps/web/.env.example` in the repo to copy** despite what the setup
@@ -188,12 +201,19 @@ steps below used to say. `NEXT_PUBLIC_API_URL` already defaults to
   monorepo root directory" if a deploy looks like it's building the
   wrong thing).
 - **API:** Render, blueprint in `render.yaml`, free tier, Singapore
-  region.
+  region. Service `bioverse-api`, id `srv-d9qkvg3m8hqs738ltkhg`, live
+  at `https://bioverse-api.onrender.com`. The dashboard lists it under
+  **Ungrouped Services** on the workspace Overview, not under Projects
+  — easy to miss. Its env vars are two clicks deep, or directly at
+  `dashboard.render.com/web/srv-d9qkvg3m8hqs738ltkhg/env` (that page
+  opens with a "Create environment group" button, which is *not* what
+  you want — the variable table is below it).
 - **Database:** PostgreSQL, connection string set directly in Render's
   dashboard env vars, not version-controlled in this repo.
-- Whether pushing to `main` auto-deploys both, or needs a manual
-  trigger on one/both platforms, hasn't been confirmed from the repo
-  alone — check each platform's dashboard the first time.
+- **Pushing to `main` does auto-deploy the API** — confirmed on
+  2026-08-10, when a push showed up as "Deploy live for `<sha>`" in the
+  service's Events tab without anyone touching the dashboard. The same
+  has not been confirmed for the Vercel side.
 
 ## First-time setup on a new machine
 
