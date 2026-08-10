@@ -43,21 +43,37 @@ that checklist, when assessing what's built.
 ## Stack & structure
 
 npm-workspaces monorepo:
-- `apps/web` — Next.js 14 (App Router), TypeScript, Tailwind CSS,
-  shadcn/ui. Deployed on **Vercel**.
-- `apps/api` — Express + TypeScript + Prisma ORM + PostgreSQL.
-  Deployed on **Render** (free tier, Singapore region — see
-  `render.yaml`).
+- `apps/web` — Next.js 16 (App Router, Turbopack), React 19,
+  TypeScript, Tailwind v4, shadcn/ui. Deployed on **Vercel**.
+- `apps/api` — Express + TypeScript + Prisma ORM + PostgreSQL,
+  run by `tsx watch` in dev. Deployed on **Render** (free tier,
+  Singapore region — see `render.yaml`).
 - `packages/shared` — TypeScript types & Zod schemas shared between
-  web and api.
+  web and api. **Must be built before the API can start** — see the
+  gotcha below.
 
 Node.js is pinned to **exactly 22.14.0** (`.node-version`) — see the
 gotcha below before loosening this.
 
 ## Architecture — how web and api actually talk
 
-- Auth: JWT access + refresh tokens in httpOnly cookies, issued by the
-  API.
+- Auth: the short-lived JWT access token lives **in memory only**
+  (zustand, `apps/web/src/lib/auth-store.ts`) — never localStorage,
+  never a cookie. Only the rotating refresh token (httpOnly, path
+  `/api/auth`) and the CSRF token (non-httpOnly, double-submit via the
+  `x-csrf-token` header) are cookies. A consequence worth knowing
+  before debugging it: every full page load fires one
+  `POST /api/auth/refresh`, so a **401 from that call while logged out
+  is normal, not a bug**. `apiClient` retries once through a shared,
+  de-duplicated refresh promise when any call returns 401.
+- Every teacher-authored entity — materi section, quiz, microscope
+  slide, video — is created unpublished via `/api/teacher/*`
+  (`requireAuth` + `requireRole("TEACHER")` + `csrfProtection`) and
+  only reaches the public `/api/*` routes students read after an
+  explicit publish. When something "was created but doesn't show up
+  for students," check that flag before anything else — that was the
+  bug in "Fix published quizzes not appearing on the student quiz
+  list."
 - **The web app proxies all `/api/*` calls through its own origin to
   the Render API** (Next.js rewrite in `apps/web/next.config.ts`)
   instead of the browser calling the API's domain directly — this is
@@ -70,6 +86,26 @@ gotcha below before loosening this.
   filesystem is ephemeral and wiped on every redeploy.
 
 ## Known gotchas (learned the hard way — check here before re-debugging these)
+
+- **`packages/shared` must be built before the API will start.** It is
+  resolved through `main: dist/index.js`, not its TypeScript source,
+  so on a fresh clone `npm run dev` dies immediately with
+  `Cannot find module '@bioverse/shared/dist/index.js'` — the web side
+  comes up fine, which makes it look like an API-only problem. Run
+  `npm run build --workspace=packages/shared` once after installing.
+  Rebuild it whenever shared types change: `tsx watch` follows the
+  API's own sources, not `shared/dist`, so the API keeps running
+  against a stale build otherwise.
+- **npm 12 refuses to run package install scripts** unless they're
+  listed in the root `package.json`'s `allowScripts`. Prisma needs its
+  postinstall to download the query/schema engine binaries, so without
+  `@prisma/engines` in that list `prisma generate` and every migration
+  fail on a fresh install — and the only clue is a warning buried in
+  npm's output. Add new packages there rather than disabling the
+  check.
+- **`.env.example`'s `DATABASE_URL` uses `postgres:postgres`**, a role
+  Homebrew's PostgreSQL doesn't create. On macOS the working value is
+  usually `postgresql://<your-mac-username>@localhost:5432/bioverse`.
 
 - **Cross-origin cookies silently break on Safari / strict
   cookie-blocking browsers.** Calling the API directly from the
@@ -138,8 +174,11 @@ gotcha below before loosening this.
   `R2_BUCKET_NAME` / `R2_PUBLIC_URL` — optional; without them, uploads
   fall back to local disk.
 
-`apps/web/.env.local` (copy from `apps/web/.env.example`):
-- `NEXT_PUBLIC_API_URL` — `http://localhost:4000` locally.
+`apps/web/.env.local` — **not needed locally, and there is no
+`apps/web/.env.example` in the repo to copy** despite what the setup
+steps below used to say. `NEXT_PUBLIC_API_URL` already defaults to
+`http://localhost:4000` in both `next.config.ts` and
+`src/lib/api-server.ts`; only set it for deployed environments.
 
 ## Deployment
 
@@ -167,16 +206,23 @@ gotcha below before loosening this.
 3. Clone: `git clone https://github.com/BeniceDidan/bioverse.git`
 4. `npm install` at the repo root — npm workspaces installs
    `apps/web`, `apps/api`, and `packages/shared` deps together.
-5. `cp apps/api/.env.example apps/api/.env` and
-   `cp apps/web/.env.example apps/web/.env.local`, then fill in
-   `DATABASE_URL` (your local Postgres) and generate the JWT secrets
-   (see above).
-6. `createdb bioverse` (or whatever matches your local `DATABASE_URL`).
-7. `npm run db:migrate` then `npm run db:seed` — seeds demo accounts:
+5. `cp apps/api/.env.example apps/api/.env`, then fill in
+   `DATABASE_URL` (your local Postgres — mind the `postgres:postgres`
+   trap in the gotchas) and generate the JWT secrets (see above).
+   `apps/web` needs no env file locally.
+6. `npm run build --workspace=packages/shared` — required before the
+   API will start at all.
+7. `createdb bioverse` (or whatever matches your local `DATABASE_URL`).
+8. `npm run db:migrate` then `npm run db:seed` — seeds demo accounts:
    student `siswa.demo@bioverse.id` / `Demo1234!`, teacher
    `guru.demo@bioverse.id` / `Demo1234!`.
-8. `npm run dev` — runs web (`:3000`) and api (`:4000`) together via
+9. `npm run dev` — runs web (`:3000`) and api (`:4000`) together via
    `concurrently`.
-9. Verify: register/login as both roles, open a materi page, try the
-   AI Tutor (works even without `GEMINI_API_KEY` — just replies with a
-   "not configured" message instead of erroring).
+10. Verify: register/login as both roles, open a materi page, try the
+    AI Tutor (works even without `GEMINI_API_KEY` — just replies with a
+    "not configured" message instead of erroring).
+
+Seeding only creates the empty "Jaringan Hewan" **container** plus the
+two demo accounts — no sections, quizzes, slides, or videos. A freshly
+seeded install showing "Belum ada …" on every page is correct, not a
+broken seed; content is authored through the teacher account.
