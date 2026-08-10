@@ -135,19 +135,36 @@ gotcha below before loosening this.
   pinned to exactly `22.14.0` via `.node-version` — don't loosen the
   engines range without re-testing the build on Render itself, not
   just locally.
-- **Uploaded files are lost on every Render redeploy** unless the
-  `R2_*` env vars are set (ephemeral disk on the free tier).
-  **Checked on 2026-08-10: still unconfigured in production.** The
-  service's env list holds exactly eight variables — `DATABASE_URL`,
-  `GEMINI_API_KEY`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`,
-  `NODE_ENV`, `PORT`, `TEACHER_ALLOWLIST_EMAILS`, `WEB_ORIGIN` — and
-  not one `R2_*` among them. So every teacher-uploaded PDF and
-  microscope image on the live site disappears at the next deploy. The
-  storage module says so itself on every boot — the 2026-08-10 deploy
-  log carries
-  `[storage] R2_* env vars are not fully set — falling back to local disk`
-  right before the listening line. When R2 is finally wired up, that
-  line disappearing is the proof it took effect.
+- **R2 was wired up on 2026-08-10** — bucket `bioverse-uploads`,
+  Asia-Pacific (APAC), on a Cloudflare account that is deliberately
+  temporary (see the handover note below). All five `R2_*` vars are
+  set in Render, and the proof it took effect is *negative*: the
+  `[storage] R2_* env vars are not fully set — falling back to local
+  disk` line that used to sit right before `BioVerse API listening` is
+  gone from the deploy log. If it ever comes back, a var was dropped.
+  The API token is an **Account** API token, not a User one — a User
+  token dies when its creator leaves the account, which is exactly
+  what the handover plan does. It is scoped to Object Read & Write on
+  that one bucket, TTL forever.
+- **`r2.dev` is DNS-blocked by Indonesian ISPs — the public bucket URL
+  does not reach the students this app is for.** Measured on 2026-08-10
+  from a Biznet connection: `pub-<hash>.r2.dev` resolves through a
+  CNAME to `rpz.biznet` → `202.169.44.80`, which refuses the
+  connection. It is a blanket block on the domain, not on our bucket —
+  an invented `pub-abc123.r2.dev` resolves to the same address. RPZ
+  blocking like this usually tracks the national blocklist, so assume
+  other Indonesian ISPs behave the same until proven otherwise.
+  What still works: `*.r2.cloudflarestorage.com` (the S3 endpoint the
+  API writes through, resolving to real Cloudflare IPs) and
+  `cloudflare.com` itself. So **teacher uploads succeed while student
+  reads fail** — files land in the bucket, then every `<img>` and PDF
+  link pointing at `r2.dev` is dead for anyone on a blocking ISP.
+  The fix is a **custom domain** on the bucket, which Cloudflare
+  recommends for production anyway (r2.dev is also rate-limited and
+  uncached). Attach the domain, then change `R2_PUBLIC_URL` to it.
+  Do this while the bucket is still empty if at all possible — once
+  teachers have uploaded, changing the public URL means rewriting
+  stored URLs, per the handover note below.
   A Render persistent disk is not the way out either — disks aren't
   offered on the free instance type. Fixing this means creating a
   Cloudflare R2 bucket and setting all five `R2_*` vars;
@@ -223,9 +240,11 @@ gotcha below before loosening this.
   in production.
 - `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` /
   `R2_BUCKET_NAME` / `R2_PUBLIC_URL` — optional locally, all five or
-  nothing; without the full set, uploads fall back to local disk. Not
-  set in production as of 2026-08-10 — see the gotcha above for why
-  that matters and why a Render disk isn't the alternative.
+  nothing; without the full set, uploads fall back to local disk. All
+  five are set in production as of 2026-08-10. `R2_PUBLIC_URL`
+  currently points at the `r2.dev` development URL, which Indonesian
+  ISPs block — see the gotcha above before assuming student-facing
+  files actually load.
 
 `apps/web/.env.local` — **not needed locally, and there is no
 `apps/web/.env.example` in the repo to copy** despite what the setup
