@@ -153,6 +153,28 @@ gotcha below before loosening this.
   Cloudflare R2 bucket and setting all five `R2_*` vars;
   `isCloudStorageConfigured()` only switches over when every one of
   them is non-empty, so a partial fill silently changes nothing.
+- **Never migrate the R2 bucket to a different Cloudflare account —
+  hand the account over instead.** Whichever account R2 gets enabled
+  on is meant to be temporary (it starts on the developer's personal
+  account, to be handed to the real teacher later), and the tempting
+  move is to make a bucket in the new account and copy the objects
+  across. Don't. `uploadBuffer` returns `${R2_PUBLIC_URL}/${key}` and
+  that **absolute** URL is what gets persisted — in
+  `material_uploads."fileUrl"`, `microscope_slides."slideImageUrl"`
+  and `questions."imageUrl"`. Change the public URL and every existing
+  link breaks at once; worse, `deleteByUrl` only recognizes a file
+  whose URL starts with the *current* prefix, so the old objects also
+  stop being deletable through the app and linger as orphans.
+  The agreed plan is therefore: invite the teacher's email under
+  Cloudflare's Manage Account → Members, promote them to Super
+  Administrator, and step down. The bucket never moves, the URLs never
+  change, no data migration happens. If a real migration ever becomes
+  unavoidable, it is: copy objects (`rclone sync` between the two S3
+  endpoints), update the five env vars, then rewrite the stored
+  prefixes with three `UPDATE ... replace(...)` statements over the
+  columns listed above. A custom domain in front of the bucket would
+  sidestep the whole problem, and is worth doing if a Cloudflare-managed
+  domain ever exists.
 - **`express-rate-limit` collapses everyone behind the same reverse
   proxy into one bucket** unless `app.set('trust proxy', N)` matches
   the actual number of proxy hops — get this wrong and an entire
