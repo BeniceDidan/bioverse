@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { BioVerseLogo } from "./bioverse-logo";
+import { BioVerseWordmark } from "./bioverse-wordmark";
 
 const SOCIALS = ["IG", "YT", "FB"];
 
@@ -24,9 +25,13 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <Link href="/" className="flex items-center gap-2 font-heading text-lg font-bold text-foreground">
+            <Link
+              href="/"
+              aria-label="BioVerse — kembali ke beranda"
+              className="flex w-fit items-center gap-2 rounded-full font-heading text-lg font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            >
               <BioVerseLogo className="size-9" />
-              BioVerse
+              <BioVerseWordmark className="h-6" />
             </Link>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">
               Interactive Biology Learning Platform — belajar Jaringan Hewan dengan representasi

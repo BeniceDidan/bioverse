@@ -24,8 +24,13 @@ export function BioVerseLogo({ className = "size-9" }: { className?: string }) {
   return (
     <motion.span
       className="inline-flex"
-      initial={{ opacity: 0, scale: 0.85, rotate: -8 }}
-      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+      // Never animates opacity from 0. A tab left in the background freezes
+      // rAF mid-flight, and anything that stops the animation running at all
+      // would leave the brand invisible — too high a price for a fade. Scale
+      // and rotation degrade harmlessly: worst case the mark simply sits a
+      // little small, still perfectly legible.
+      initial={{ scale: 0.86, rotate: -8 }}
+      animate={{ scale: 1, rotate: 0 }}
       transition={{ duration: 0.5, ease: APPLE_EASE }}
       whileHover={{ scale: 1.1, rotate: 6 }}
       whileTap={{ scale: 0.94, rotate: 0 }}

@@ -35,9 +35,11 @@ export function BioVerseWordmark({ className }: { className?: string }) {
     <motion.span
       className="inline-flex"
       // Drifts in just after the mark settles, so the pair reads as one
-      // gesture rather than two things appearing at once.
-      initial={{ opacity: 0, x: -6 }}
-      animate={{ opacity: 1, x: 0 }}
+      // gesture rather than two things appearing at once. Position only, no
+      // fade — see the note in bioverse-logo.tsx: an animation that never
+      // finishes must never be able to hide the brand.
+      initial={{ x: -8 }}
+      animate={{ x: 0 }}
       transition={{ duration: 0.45, ease: APPLE_EASE, delay: 0.12 }}
     >
       {images}
