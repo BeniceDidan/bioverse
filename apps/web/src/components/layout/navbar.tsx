@@ -35,6 +35,7 @@ import {
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationMenu } from "./notification-menu";
 import { BioVerseLogo } from "./bioverse-logo";
+import { BioVerseWordmark } from "./bioverse-wordmark";
 
 const APPLE_EASE = [0.32, 0.72, 0, 1] as const;
 
@@ -101,9 +102,14 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 w-full glass">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex shrink-0 items-center gap-2 font-heading text-lg font-bold text-foreground">
+        <Link
+          href="/"
+          aria-label="BioVerse — kembali ke beranda"
+          title="Kembali ke beranda"
+          className="flex shrink-0 items-center gap-2 rounded-full font-heading text-lg font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+        >
           <BioVerseLogo className="size-9" />
-          <span className="hidden sm:inline">BioVerse</span>
+          <BioVerseWordmark />
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex">
