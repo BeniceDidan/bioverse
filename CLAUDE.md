@@ -196,6 +196,40 @@ gotcha below before loosening this.
   the actual number of proxy hops — get this wrong and an entire
   school's shared network IP gets rate-limited as if it were one
   client.
+- **A class shares one public IP, so IP-keyed limits treat thirty
+  students as one abusive visitor.** This was measured, not guessed: a
+  30-student load test against the original limits (20 logins per 15
+  min, 120 requests per minute) left 10 students unable to log in at
+  all and rejected most quiz answers; 15 students also failed. The
+  server was never the constraint — it answered in 8-18ms throughout.
+  `/api/auth/refresh` made it worse by sitting behind the strict auth
+  limiter while firing on every full page load, so a class burned its
+  allowance just by reading.
+  The fix separates the two concerns rather than loosening security.
+  `loginRateLimiter` is keyed on the **submitted email** and counts
+  only failures (`skipSuccessfulRequests`), so guessing one password
+  can never consume a classroom's budget and a classroom can never
+  lock itself out; `authIpRateLimiter` keeps a generous per-address
+  ceiling so one machine still can't work through a list of accounts;
+  the general limiter is sized for a class mid-lesson; and refresh
+  answers only to that general limit. After the change the same test
+  passed 100% at 30 students and again at 60. Re-verified that ten
+  wrong passwords are served, the eleventh is refused, the correct
+  password stays refused while locked, and other accounts are
+  untouched. Re-run it any time with
+  `npx tsx prisma/seed-loadtest.ts 30` to create throwaway students
+  (the API's own register route can't be used for setup — it is behind
+  the very limiter under test), then the load script, then
+  `... seed-loadtest.ts clean`.
+- **Don't use `window.confirm` for destructive actions.** Browsers let
+  a user suppress further dialogs from a page — Safari on iOS offers
+  exactly that after a couple of them — and once suppressed
+  `confirm()` returns false with nothing shown, so every delete
+  silently does nothing. That is precisely how "materi tidak bisa
+  dihapus" was reported, and reproducing it showed the click landing
+  with no DELETE request leaving the browser at all. Use
+  `components/ui/confirm-dialog.tsx`, which is ordinary DOM and cannot
+  be switched off.
 - **The Gemini SDK (`@google/genai`) is ESM-only** and is lazy-loaded
   inside the API rather than imported at the top level, to avoid
   breaking the CommonJS/TS build. Follow that pattern for other
@@ -221,6 +255,24 @@ gotcha below before loosening this.
   It is the database going to sleep, not a crash or a Prisma bug — but
   it stacks with Render's own 15-minute spin-down, so the first
   request after a quiet spell can be waiting on *two* cold starts.
+
+## Two smaller things worth knowing
+
+- **The grade export is a real `.xlsx`, built with `exceljs`** in
+  `modules/dashboard/dashboard.export.ts`, not CSV. Excel on an
+  Indonesian locale reads comma-separated files as a single column,
+  which would defeat the point of handing the teacher something already
+  structured. `npm audit` reports a moderate advisory against `uuid`
+  underneath exceljs; it needs an attacker-supplied buffer argument,
+  which this code path never passes.
+- **The brand lockup is two images, not one.** The lettering is cropped
+  from artwork whose ink is a dark forest green (`rgb(53,78,48)`) that
+  disappears on a dark background, so `wordmark.webp` and a brightened
+  `wordmark-dark.webp` swap under `.dark`. The 1MB master lives in
+  `apps/web/brand/` rather than `public/` so it isn't served to every
+  visitor. Neither the mark nor the lettering animates opacity from 0:
+  a background tab freezes rAF mid-animation, and anything that stops
+  the animation finishing would otherwise leave the header empty.
 
 ## Environment variables
 
