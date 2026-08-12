@@ -10,6 +10,7 @@ import type { TeacherDashboard as TeacherDashboardData } from "@/lib/dashboard-t
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog, type ConfirmState } from "@/components/ui/confirm-dialog";
 
 /** Quizzes default to a 75 pass mark; the table shows one status per student
  * rather than per quiz, so it uses that same reference point. */
@@ -24,6 +25,7 @@ export function TeacherDashboard() {
   const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-teacher"],
@@ -41,10 +43,16 @@ export function TeacherDashboard() {
   });
 
   function handleRemoveStudent(id: string, name: string) {
-    const ok = window.confirm(
-      `Keluarkan ${name} dari kelas? Akunnya dihapus permanen beserta nilai, progres, dan riwayat belajarnya. Tindakan ini tidak bisa dibatalkan.`
-    );
-    if (ok) removeStudent.mutate(id);
+    setConfirmState({
+      title: `Keluarkan ${name} dari kelas?`,
+      description:
+        "Akunnya dihapus permanen beserta nilai, progres, dan seluruh riwayat belajarnya. Tindakan ini tidak bisa dibatalkan.",
+      confirmLabel: "Keluarkan",
+      onConfirm: () => {
+        setConfirmState(null);
+        removeStudent.mutate(id);
+      },
+    });
   }
 
   /**
@@ -237,6 +245,14 @@ export function TeacherDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        state={confirmState}
+        onOpenChange={(open) => {
+          if (!open) setConfirmState(null);
+        }}
+        loading={removeStudent.isPending}
+      />
     </div>
   );
 }

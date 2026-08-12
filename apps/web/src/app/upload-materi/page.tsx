@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MarkdownContent } from "@/components/materi/markdown-content";
+import { ConfirmDialog, type ConfirmState } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 const STATUS_LABEL: Record<UploadStatus, { label: string; variant: "muted" | "secondary" | "default" | "success" }> = {
@@ -130,6 +131,8 @@ export default function UploadMateriPage() {
     onError: (err) => setActionError(err instanceof ApiClientError ? err.message : "Gagal menghapus materi"),
   });
 
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+
   const deleteAllUploadsMutation = useMutation({
     mutationFn: () => apiClient.delete<{ message: string }>("/api/teacher/materials/uploads/all"),
     onSuccess: () => {
@@ -181,25 +184,40 @@ export default function UploadMateriPage() {
   }
 
   function handleDeleteUpload(upload: MaterialUpload) {
-    const message = upload.materialSection
-      ? `Hapus "${upload.fileName}"? Submateri "${upload.materialSection.title}" yang dihasilkan dari PDF ini — beserta preparat mikroskop dan video yang terkait — juga akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
-      : `Hapus riwayat upload "${upload.fileName}" dari daftar ini?`;
-    const ok = window.confirm(message);
-    if (ok) deleteUploadMutation.mutate(upload.id);
+    setConfirmState({
+      title: upload.materialSection ? "Hapus materi ini?" : "Hapus riwayat upload?",
+      description: upload.materialSection
+        ? `"${upload.fileName}" dan submateri "${upload.materialSection.title}" yang dihasilkan darinya — beserta preparat mikroskop dan video yang terkait — akan terhapus. Tindakan ini tidak bisa dibatalkan.`
+        : `Riwayat upload "${upload.fileName}" akan dihapus dari daftar ini.`,
+      onConfirm: () => {
+        setConfirmState(null);
+        deleteUploadMutation.mutate(upload.id);
+      },
+    });
   }
 
   function handleDeleteAllUploads() {
-    const ok = window.confirm(
-      `Hapus SEMUA ${uploads.length} materi beserta riwayat unggahnya? Submateri yang dihasilkan — termasuk preparat mikroskop dan video yang terkait — ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
-    );
-    if (ok) deleteAllUploadsMutation.mutate();
+    setConfirmState({
+      title: `Hapus semua ${uploads.length} materi?`,
+      description:
+        "Seluruh materi beserta riwayat unggahnya akan terhapus, termasuk submateri yang dihasilkan serta preparat mikroskop dan video yang terkait. Tindakan ini tidak bisa dibatalkan.",
+      confirmLabel: "Hapus Semua",
+      onConfirm: () => {
+        setConfirmState(null);
+        deleteAllUploadsMutation.mutate();
+      },
+    });
   }
 
   function handleDeleteOrphanSection(section: MaterialSectionOption) {
-    const ok = window.confirm(
-      `Hapus "${section.title}"? Submateri ini sudah tidak punya PDF sumber (mungkin terhapus sebelumnya). Tindakan ini tidak bisa dibatalkan.`
-    );
-    if (ok) deleteOrphanSectionMutation.mutate(section.id);
+    setConfirmState({
+      title: "Hapus materi ini?",
+      description: `"${section.title}" sudah tidak punya PDF sumber (kemungkinan terhapus sebelumnya). Tindakan ini tidak bisa dibatalkan.`,
+      onConfirm: () => {
+        setConfirmState(null);
+        deleteOrphanSectionMutation.mutate(section.id);
+      },
+    });
   }
 
   function triggerReplace(uploadId: string) {
@@ -547,6 +565,18 @@ export default function UploadMateriPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        state={confirmState}
+        onOpenChange={(open) => {
+          if (!open) setConfirmState(null);
+        }}
+        loading={
+          deleteUploadMutation.isPending ||
+          deleteAllUploadsMutation.isPending ||
+          deleteOrphanSectionMutation.isPending
+        }
+      />
     </div>
   );
 }

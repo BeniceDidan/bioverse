@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog, type ConfirmState } from "@/components/ui/confirm-dialog";
 
 export default function KelolaMikroskopPage() {
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function KelolaMikroskopPage() {
   const [materialSectionId, setMaterialSectionId] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
   const sectionsQuery = useQuery({
     queryKey: ["teacher-sections"],
@@ -141,15 +143,26 @@ export default function KelolaMikroskopPage() {
   }
 
   function handleDelete(slide: MicroscopeSlideSummary) {
-    const ok = window.confirm(`Hapus preparat "${slide.tissueName}"? Semua label pada preparat ini juga akan terhapus.`);
-    if (ok) deleteMutation.mutate(slide.id);
+    setConfirmState({
+      title: "Hapus preparat ini?",
+      description: `"${slide.tissueName}" beserta semua label di atasnya akan terhapus. Tindakan ini tidak bisa dibatalkan.`,
+      onConfirm: () => {
+        setConfirmState(null);
+        deleteMutation.mutate(slide.id);
+      },
+    });
   }
 
   function handleDeleteAll() {
-    const ok = window.confirm(
-      `Hapus SEMUA ${slides.length} preparat beserta seluruh labelnya? Tindakan ini tidak bisa dibatalkan.`
-    );
-    if (ok) deleteAllMutation.mutate();
+    setConfirmState({
+      title: `Hapus semua ${slides.length} preparat?`,
+      description: "Seluruh preparat beserta labelnya akan terhapus. Tindakan ini tidak bisa dibatalkan.",
+      confirmLabel: "Hapus Semua",
+      onConfirm: () => {
+        setConfirmState(null);
+        deleteAllMutation.mutate();
+      },
+    });
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -400,6 +413,14 @@ export default function KelolaMikroskopPage() {
           <p className="py-8 text-center text-sm text-muted-foreground">Belum ada preparat yang diunggah.</p>
         )}
       </div>
+
+      <ConfirmDialog
+        state={confirmState}
+        onOpenChange={(open) => {
+          if (!open) setConfirmState(null);
+        }}
+        loading={deleteMutation.isPending || deleteAllMutation.isPending}
+      />
     </div>
   );
 }

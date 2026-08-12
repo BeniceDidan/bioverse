@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog, type ConfirmState } from "@/components/ui/confirm-dialog";
 
 const QUESTION_TYPE_OPTIONS = [
   { value: "MULTIPLE_CHOICE", label: "Pilihan Ganda" },
@@ -75,6 +76,7 @@ export default function KelolaKuisPage() {
   });
 
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -121,17 +123,27 @@ export default function KelolaKuisPage() {
   }
 
   function handleDeleteQuiz(quiz: QuizSummary) {
-    const ok = window.confirm(
-      `Hapus kuis "${quiz.title}"? Semua soal dan hasil pengerjaan siswa pada kuis ini ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
-    );
-    if (ok) deleteMutation.mutate(quiz.id);
+    setConfirmState({
+      title: "Hapus kuis ini?",
+      description: `"${quiz.title}" beserta semua soal dan hasil pengerjaan siswa di dalamnya akan terhapus. Tindakan ini tidak bisa dibatalkan.`,
+      onConfirm: () => {
+        setConfirmState(null);
+        deleteMutation.mutate(quiz.id);
+      },
+    });
   }
 
   function handleDeleteAllQuizzes() {
-    const ok = window.confirm(
-      `Hapus SEMUA ${quizzesQuery.data?.quizzes.length ?? 0} kuis beserta soal dan hasil pengerjaan siswanya? Tindakan ini tidak bisa dibatalkan.`
-    );
-    if (ok) deleteAllMutation.mutate();
+    setConfirmState({
+      title: `Hapus semua ${quizzesQuery.data?.quizzes.length ?? 0} kuis?`,
+      description:
+        "Seluruh kuis beserta soal dan hasil pengerjaan siswanya akan terhapus. Tindakan ini tidak bisa dibatalkan.",
+      confirmLabel: "Hapus Semua",
+      onConfirm: () => {
+        setConfirmState(null);
+        deleteAllMutation.mutate();
+      },
+    });
   }
 
   function toggleType(value: string) {
@@ -401,6 +413,14 @@ export default function KelolaKuisPage() {
           <p className="py-8 text-center text-sm text-muted-foreground">Belum ada kuis yang dibuat.</p>
         )}
       </div>
+
+      <ConfirmDialog
+        state={confirmState}
+        onOpenChange={(open) => {
+          if (!open) setConfirmState(null);
+        }}
+        loading={deleteMutation.isPending || deleteAllMutation.isPending}
+      />
     </div>
   );
 }
