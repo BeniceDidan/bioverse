@@ -16,7 +16,6 @@ import {
   ListChecks,
   Video,
   LayoutDashboard,
-  Info,
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -77,7 +76,9 @@ const MAIN_LINKS = [
     teacher: { href: "/kelola-video", label: "Kelola Video" },
   },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/tentang", label: "Tentang", icon: Info },
+  // "Tentang" deliberately lives only in the footer: it is a profile page
+  // rather than something a teacher or student reaches for during a lesson,
+  // and the row needs the width more than it needs the link.
 ];
 
 function initials(name: string) {
@@ -121,7 +122,9 @@ export function Navbar() {
         </Link>
 
         {/* Eight items plus the brand lockup and the right-hand controls need
-            about 1160px; at lg (1024) the row ran past the edge of the screen.
+            about 1050px even after dropping "Tentang"; measured at lg (1024)
+            the seven items alone span 750px with zero clearance and the row
+            still runs past the edge of the screen.
             The inline nav therefore starts at xl, and everything narrower uses
             the same menu button that already works well on phones. */}
         <nav className="hidden flex-1 items-center justify-center gap-0.5 xl:flex">
