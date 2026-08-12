@@ -39,6 +39,14 @@ import { BioVerseWordmark } from "./bioverse-wordmark";
 
 const APPLE_EASE = [0.32, 0.72, 0, 1] as const;
 
+// Shared by the plain links and the teacher dropdown triggers so the row can
+// never end up with items of different heights. whitespace-nowrap is the point:
+// "AI Tutor" is the only label containing a space, so when the row got tight it
+// alone wrapped to two lines and grew to 56px against everyone else's 36px,
+// which read as the nav piling up on itself.
+const NAV_ITEM_CLASS =
+  "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium transition-colors";
+
 const MAIN_LINKS = [
   // The logo also links home, but it reads as branding rather than a control,
   // so returning to the landing page needs an item people can actually find.
@@ -112,7 +120,11 @@ export function Navbar() {
           <BioVerseWordmark />
         </Link>
 
-        <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex">
+        {/* Eight items plus the brand lockup and the right-hand controls need
+            about 1160px; at lg (1024) the row ran past the edge of the screen.
+            The inline nav therefore starts at xl, and everything narrower uses
+            the same menu button that already works well on phones. */}
+        <nav className="hidden flex-1 items-center justify-center gap-0.5 xl:flex">
           {links.map((link) => {
             const active = pathname === link.href || (link.teacher && pathname.startsWith(link.teacher.href));
 
@@ -122,7 +134,7 @@ export function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                        NAV_ITEM_CLASS,
                         active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                     >
@@ -148,7 +160,7 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                  NAV_ITEM_CLASS,
                   active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
@@ -203,7 +215,7 @@ export function Navbar() {
           <Button
             variant="ghost"
             size="icon"
-            className="overflow-hidden lg:hidden"
+            className="overflow-hidden xl:hidden"
             aria-label="Buka menu"
             onClick={() => setMobileOpen((v) => !v)}
           >
@@ -231,7 +243,7 @@ export function Navbar() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: APPLE_EASE }}
-            className="overflow-hidden border-t border-border bg-card lg:hidden"
+            className="overflow-hidden border-t border-border bg-card xl:hidden"
           >
             <div className="px-4 pb-4 pt-3">
               <nav className="grid grid-cols-2 gap-2">
