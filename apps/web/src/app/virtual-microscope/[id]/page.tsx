@@ -55,7 +55,10 @@ export default function MicroscopeViewerPage() {
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-black/5">
+            {/* self-start: as a grid item this would otherwise stretch to the height of
+                the label column, and the markers — positioned as a percentage of
+                this box — would drift down away from the picture. */}
+            <div className="relative self-start overflow-hidden rounded-2xl border border-border bg-black/5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resolveFileUrl(slide.slideImageUrl)}

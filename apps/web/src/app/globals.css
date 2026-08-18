@@ -189,3 +189,73 @@
     border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
   }
 }
+
+/* ── Cetak / Simpan sebagai PDF ─────────────────────────────────────────────
+   Printing a materi used to produce four pages of navbar, action buttons and
+   footer wrapped around the actual lesson. Chrome prints whatever is on screen,
+   so the page has to say explicitly what belongs on paper: the article and its
+   heading, nothing else. Anything a reader can click is by definition useless
+   once printed, hence the blanket rule on nav, footer and buttons. */
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* Chrome drops backgrounds by default; forcing plain black-on-white keeps the
+     text readable without the teacher having to enable "Background graphics". */
+  body * {
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  header,
+  footer,
+  nav,
+  button,
+  [data-print="hide"] {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* The page wrapper caps content at max-w-4xl and adds vertical padding that
+     only makes sense on screen. */
+  main > div {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Cards on the printed page become plain blocks — the borders and tints are
+     screen decoration and cost a lot of toner. */
+  [class*="rounded-"] {
+    border-color: #ddd !important;
+    background: transparent !important;
+  }
+
+  a[href]::after {
+    content: "";
+  }
+
+  /* Never split a heading from the text it introduces, or a figure across
+     pages. */
+  h1,
+  h2,
+  h3 {
+    break-after: avoid-page;
+  }
+
+  img,
+  figure,
+  pre,
+  table {
+    break-inside: avoid-page;
+  }
+}

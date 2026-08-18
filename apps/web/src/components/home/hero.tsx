@@ -63,7 +63,7 @@ export function Hero({ materiCount }: { materiCount: number }) {
 
             <p className="mt-5 max-w-lg text-lg text-muted-foreground">
               BioVerse membantumu memahami konsep Jaringan Hewan lewat multiple representations,
-              Virtual Microscope, video, kuis, dan AI Tutor — semua dalam satu tempat yang gampang dipakai.
+              Atlas Histologi, video, kuis, dan AI Tutor — semua dalam satu tempat yang gampang dipakai.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">

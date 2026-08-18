@@ -58,6 +58,16 @@ enum NotificationType {
   PROGRESS
 }
 
+/// Empat jaringan dasar hewan — dipakai untuk mengelompokkan preparat di
+/// halaman Atlas Histologi. LAINNYA menampung preparat yang belum digolongkan.
+enum TissueType {
+  EPITEL
+  IKAT
+  OTOT
+  SARAF
+  LAINNYA
+}
+
 enum MicroscopeMode {
   BELAJAR
   IDENTIFIKASI
@@ -273,6 +283,7 @@ model MicroscopeSlide {
   teacherId         String?
   teacher           User?             @relation(fields: [teacherId], references: [id], onDelete: SetNull)
   tissueName        String
+  tissueType        TissueType        @default(LAINNYA)
   slideImageUrl     String
   description       String
   isPublished       Boolean           @default(false)

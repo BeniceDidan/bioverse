@@ -43,6 +43,7 @@ export default function KelolaMikroskopPage() {
   const [file, setFile] = useState<File | null>(null);
   const [tissueName, setTissueName] = useState("");
   const [description, setDescription] = useState("");
+  const [tissueType, setTissueType] = useState("");
   const [materialSectionId, setMaterialSectionId] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -67,6 +68,8 @@ export default function KelolaMikroskopPage() {
       form.append("materialSectionId", materialSectionId);
       form.append("tissueName", tissueName);
       form.append("description", description);
+      // Dikosongkan berarti "tebak dari nama jaringan" di sisi server.
+      if (tissueType) form.append("tissueType", tissueType);
       return apiClient.postForm("/api/teacher/microscope/slides", form);
     },
     onSuccess: () => {
@@ -74,6 +77,7 @@ export default function KelolaMikroskopPage() {
       setFile(null);
       setTissueName("");
       setDescription("");
+      setTissueType("");
       setMaterialSectionId("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       queryClient.invalidateQueries({ queryKey: ["teacher-microscope-slides"] });
@@ -187,7 +191,7 @@ export default function KelolaMikroskopPage() {
         <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Microscope className="size-7" />
         </span>
-        <h1 className="mt-4 font-heading text-3xl font-bold text-foreground">Kelola Virtual Microscope</h1>
+        <h1 className="mt-4 font-heading text-3xl font-bold text-foreground">Kelola Atlas Histologi</h1>
         <p className="mx-auto mt-2 max-w-md text-muted-foreground">
           Unggah foto preparat, lalu tambahkan label pada bagian-bagian jaringan.
         </p>
@@ -239,6 +243,26 @@ export default function KelolaMikroskopPage() {
                 onChange={(e) => setTissueName(e.target.value)}
                 placeholder="Contoh: Testis (perbesaran sedang)"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="tissueType">Jenis Jaringan</Label>
+              <select
+                id="tissueType"
+                value={tissueType}
+                onChange={(e) => setTissueType(e.target.value)}
+                className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"
+              >
+                <option value="">Tebak otomatis dari nama jaringan</option>
+                <option value="EPITEL">Jaringan Epitel</option>
+                <option value="IKAT">Jaringan Ikat</option>
+                <option value="OTOT">Jaringan Otot</option>
+                <option value="SARAF">Jaringan Saraf</option>
+                <option value="LAINNYA">Lainnya</option>
+              </select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Menentukan preparat ini masuk kelompok mana di halaman Atlas Histologi.
+              </p>
             </div>
 
             <div>

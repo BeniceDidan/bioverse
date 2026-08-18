@@ -58,7 +58,7 @@ const MAIN_LINKS = [
   },
   {
     href: "/virtual-microscope",
-    label: "Microscope",
+    label: "Atlas Histologi",
     icon: Microscope,
     teacher: { href: "/kelola-mikroskop", label: "Kelola Preparat" },
   },

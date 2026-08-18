@@ -49,7 +49,7 @@ export default function TentangPage() {
         <h1 className="mt-5 font-heading text-3xl font-bold text-foreground sm:text-4xl">Tentang BioVerse</h1>
         <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
           BioVerse adalah platform pembelajaran biologi interaktif yang mengintegrasikan multiple
-          representations, Virtual Microscope, AI Tutor, video pembelajaran, evaluasi interaktif, dan
+          representations, Atlas Histologi, AI Tutor, video pembelajaran, evaluasi interaktif, dan
           learning analytics dalam satu sistem — berfokus pada materi Jaringan Hewan.
         </p>
       </div>

@@ -12,9 +12,12 @@ export interface MicroscopeHotspot {
   createdAt: string;
 }
 
+export type TissueType = "EPITEL" | "IKAT" | "OTOT" | "SARAF" | "LAINNYA";
+
 export interface MicroscopeSlideSummary {
   id: string;
   tissueName: string;
+  tissueType: TissueType;
   description: string;
   slideImageUrl: string;
   isPublished: boolean;

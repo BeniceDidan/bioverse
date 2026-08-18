@@ -7,7 +7,7 @@ const SOCIALS = ["IG", "YT", "FB"];
 
 const LEARN_LINKS = [
   { href: "/materi", label: "Materi Jaringan Hewan" },
-  { href: "/virtual-microscope", label: "Virtual Microscope" },
+  { href: "/virtual-microscope", label: "Atlas Histologi" },
   { href: "/ai-tutor", label: "AI Tutor" },
   { href: "/kuis", label: "Kuis Interaktif" },
 ];
@@ -35,7 +35,7 @@ export function Footer() {
             </Link>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">
               Interactive Biology Learning Platform — belajar Jaringan Hewan dengan representasi
-              interaktif, Virtual Microscope, dan AI Tutor.
+              interaktif, Atlas Histologi, dan AI Tutor.
             </p>
             <div className="mt-4 flex gap-2">
               {SOCIALS.map((s) => (

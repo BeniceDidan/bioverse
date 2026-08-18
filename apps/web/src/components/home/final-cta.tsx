@@ -13,7 +13,7 @@ export function FinalCta() {
           Siap menjelajahi Jaringan Hewan?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-primary-foreground/90">
-          Daftar gratis dan mulai belajar dengan representasi interaktif, Virtual Microscope, dan AI Tutor.
+          Daftar gratis dan mulai belajar dengan representasi interaktif, Atlas Histologi, dan AI Tutor.
         </p>
         <Button size="lg" variant="accent" className="mt-8" asChild>
           <Link href="/register">

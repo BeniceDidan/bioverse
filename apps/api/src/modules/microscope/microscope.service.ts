@@ -2,11 +2,32 @@ import { prisma } from "../../lib/prisma";
 import { uploadBuffer, deleteByUrl } from "../../lib/storage";
 import { ApiError } from "../../utils/ApiError";
 
+type TissueType = "EPITEL" | "IKAT" | "OTOT" | "SARAF" | "LAINNYA";
+
 interface CreateSlideInput {
   materialSectionId: string;
   tissueName: string;
   description: string;
+  tissueType?: TissueType;
   file: Express.Multer.File;
+}
+
+/**
+ * Falls back to reading the tissue name when the teacher hasn't picked a
+ * category. Slides are almost always named after their tissue ("Jaringan Epitel
+ * Pipih"), so this gets existing and hastily-filled slides into the right group
+ * without forcing anyone to re-enter what they already typed.
+ */
+export function guessTissueType(tissueName: string): TissueType {
+  const name = tissueName.toLowerCase();
+  if (name.includes("epitel")) return "EPITEL";
+  // "tulang belakang" checked here, before the bone rule below claims it for
+  // connective tissue — the spinal cord is nervous tissue despite the name.
+  if (name.includes("saraf") || name.includes("neuron") || name.includes("tulang belakang")) return "SARAF";
+  if (name.includes("otot")) return "OTOT";
+  if (name.includes("ikat") || name.includes("tulang") || name.includes("darah") || name.includes("lemak"))
+    return "IKAT";
+  return "LAINNYA";
 }
 
 export async function createSlide(teacherId: string, input: CreateSlideInput) {
@@ -26,6 +47,7 @@ export async function createSlide(teacherId: string, input: CreateSlideInput) {
       materialSectionId: input.materialSectionId,
       teacherId,
       tissueName: input.tissueName,
+      tissueType: input.tissueType ?? guessTissueType(input.tissueName),
       description: input.description,
       slideImageUrl,
       order: count + 1,
@@ -61,7 +83,7 @@ export async function getSlideForTeacher(slideId: string, teacherId: string) {
 export async function updateSlide(
   slideId: string,
   teacherId: string,
-  data: Partial<{ tissueName: string; description: string; materialSectionId: string }>
+  data: Partial<{ tissueName: string; description: string; materialSectionId: string; tissueType: TissueType }>
 ) {
   await getOwnedSlide(slideId, teacherId);
 
@@ -102,7 +124,7 @@ interface HotspotInput {
   xPercent: number;
   yPercent: number;
   label: string;
-  tissueName: string;
+  tissueName?: string;
   tissueFunction: string;
   characteristics: string;
   location: string;
@@ -110,8 +132,12 @@ interface HotspotInput {
 }
 
 export async function createHotspot(slideId: string, teacherId: string, input: HotspotInput) {
-  await getOwnedSlide(slideId, teacherId);
-  return prisma.microscopeHotspot.create({ data: { slideId, ...input } });
+  const slide = await getOwnedSlide(slideId, teacherId);
+  // The tissue name belongs to the slide, not to each label on it. Older rows
+  // carry their own copy, so a value sent explicitly still wins.
+  return prisma.microscopeHotspot.create({
+    data: { slideId, ...input, tissueName: input.tissueName?.trim() || slide.tissueName },
+  });
 }
 
 async function getOwnedHotspot(hotspotId: string, teacherId: string) {
@@ -135,7 +161,7 @@ export async function deleteHotspot(hotspotId: string, teacherId: string) {
 export async function listPublicSlides() {
   return prisma.microscopeSlide.findMany({
     where: { isPublished: true },
-    orderBy: [{ materialSection: { order: "asc" } }, { order: "asc" }],
+    orderBy: [{ tissueType: "asc" }, { materialSection: { order: "asc" } }, { order: "asc" }],
     include: {
       materialSection: { select: { id: true, title: true, slug: true } },
       _count: { select: { hotspots: true } },

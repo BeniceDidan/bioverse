@@ -24,7 +24,7 @@ export function FeatureHighlightCards({ materiCount }: { materiCount: number }) 
     {
       icon: Microscope,
       value: "Interaktif",
-      label: "Virtual Microscope",
+      label: "Atlas Histologi",
       bg: "bg-primary/10 text-primary",
     },
     {

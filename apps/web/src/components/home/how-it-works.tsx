@@ -12,7 +12,7 @@ const STEPS = [
   },
   {
     icon: Microscope,
-    title: "Lihat Virtual Microscope",
+    title: "Lihat Atlas Histologi",
     description: "Amati jaringan seperti pakai mikroskop asli, langsung dari layar.",
     href: "/virtual-microscope",
     color: "bg-secondary/10 text-secondary",

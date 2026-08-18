@@ -90,7 +90,7 @@ export default async function MateriDetailPage({ params }: { params: Promise<{ s
       <h1 className="mt-4 font-heading text-3xl font-bold text-foreground sm:text-4xl">{section.title}</h1>
       <p className="mt-3 text-lg text-muted-foreground">{section.description}</p>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div data-print="hide" className="mt-6 flex flex-wrap items-center gap-3">
         <MateriActions sectionId={section.id} />
         {section.upload?.fileUrl && (
           <Button variant="outline" size="sm" asChild>
@@ -170,10 +170,10 @@ export default async function MateriDetailPage({ params }: { params: Promise<{ s
         </CardContent>
       </Card>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div data-print="hide" className="mt-8 grid gap-4 sm:grid-cols-3">
         {[
           { icon: VideoIcon, label: "Video Pembelajaran", href: "/video" },
-          { icon: Microscope, label: "Virtual Microscope", href: "/virtual-microscope" },
+          { icon: Microscope, label: "Atlas Histologi", href: "/virtual-microscope" },
           { icon: ListTodo, label: "Kuis", href: "/kuis" },
         ].map((r) => (
           <Link key={r.label} href={r.href}>
@@ -188,7 +188,7 @@ export default async function MateriDetailPage({ params }: { params: Promise<{ s
         ))}
       </div>
 
-      <div className="mt-10 flex items-center justify-between gap-4 border-t border-border pt-6">
+      <div data-print="hide" className="mt-10 flex items-center justify-between gap-4 border-t border-border pt-6">
         {prev ? (
           <Link
             href={`/materi/${prev.slug}`}

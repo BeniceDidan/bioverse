@@ -7,7 +7,7 @@ import * as microscopeService from "./microscope.service";
 
 export const createSlide = asyncHandler(async (req: Request, res: Response) => {
   if (!req.file) throw ApiError.badRequest("Gambar preparat wajib diunggah");
-  const { materialSectionId, tissueName, description } = req.body;
+  const { materialSectionId, tissueName, description, tissueType } = req.body;
   if (!materialSectionId || !tissueName || !description) {
     throw ApiError.badRequest("Submateri, nama jaringan, dan deskripsi wajib diisi");
   }
@@ -15,6 +15,7 @@ export const createSlide = asyncHandler(async (req: Request, res: Response) => {
     materialSectionId,
     tissueName,
     description,
+    tissueType,
     file: req.file,
   });
   res.status(201).json({ success: true, data: { slide } });

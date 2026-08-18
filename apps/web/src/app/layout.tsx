@@ -28,7 +28,7 @@ const roboto = Roboto({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 const SITE_DESCRIPTION =
-  "Platform pembelajaran biologi interaktif untuk materi Jaringan Hewan — dengan Virtual Microscope, AI Tutor, video, dan kuis interaktif.";
+  "Platform pembelajaran biologi interaktif untuk materi Jaringan Hewan — dengan Atlas Histologi, AI Tutor, video, dan kuis interaktif.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

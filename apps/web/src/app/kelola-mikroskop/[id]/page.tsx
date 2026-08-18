@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 
 const EMPTY_FORM = {
   label: "",
-  tissueName: "",
   tissueFunction: "",
   characteristics: "",
   location: "",
@@ -29,7 +28,10 @@ export default function AnnotateSlidePage() {
   const router = useRouter();
   const { user, status } = useAuthStore();
   const queryClient = useQueryClient();
-  const imageRef = useRef<HTMLDivElement>(null);
+  // Measured against the <img> itself, never the wrapper: the wrapper is a grid
+  // item and stretches to whichever column is taller, so its box stops matching
+  // the picture as soon as the side panel outgrows it.
+  const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
@@ -95,6 +97,8 @@ export default function AnnotateSlidePage() {
     const rect = imageRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
+    // A click on the frame around the picture isn't a position on the slide.
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
     setEditingId(null);
     setForm(EMPTY_FORM);
     setFormError(null);
@@ -107,7 +111,6 @@ export default function AnnotateSlidePage() {
     setEditingId(h.id);
     setForm({
       label: h.label,
-      tissueName: h.tissueName,
       tissueFunction: h.tissueFunction,
       characteristics: h.characteristics,
       location: h.location,
@@ -123,8 +126,8 @@ export default function AnnotateSlidePage() {
   }
 
   function submitForm() {
-    if (!form.label.trim() || !form.tissueName.trim() || !form.tissueFunction.trim()) {
-      setFormError("Label, nama jaringan, dan fungsi wajib diisi.");
+    if (!form.label.trim() || !form.tissueFunction.trim()) {
+      setFormError("Label dan fungsi wajib diisi.");
       return;
     }
     if (pendingPos) {
@@ -177,12 +180,12 @@ export default function AnnotateSlidePage() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
             <div
-              ref={imageRef}
               onClick={handleImageClick}
-              className="relative cursor-crosshair overflow-hidden rounded-2xl border border-border bg-black/5"
+              className="relative self-start cursor-crosshair overflow-hidden rounded-2xl border border-border bg-black/5"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                ref={imageRef}
                 src={resolveFileUrl(slide.slideImageUrl)}
                 alt={slide.tissueName}
                 className="block w-full select-none"
@@ -236,15 +239,6 @@ export default function AnnotateSlidePage() {
                         value={form.label}
                         onChange={(e) => setForm({ ...form, label: e.target.value })}
                         placeholder="Contoh: Lumen"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="tissueName">Nama Jaringan</Label>
-                      <Input
-                        id="tissueName"
-                        value={form.tissueName}
-                        onChange={(e) => setForm({ ...form, tissueName: e.target.value })}
-                        placeholder="Contoh: Tubulus Seminiferus"
                       />
                     </div>
                     <div>
@@ -325,7 +319,7 @@ export default function AnnotateSlidePage() {
                       </span>
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{h.label}</p>
-                        <p className="truncate text-xs text-muted-foreground">{h.tissueName}</p>
+                        <p className="truncate text-xs text-muted-foreground">{h.location}</p>
                       </div>
                     </button>
                   ))}

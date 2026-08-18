@@ -156,7 +156,7 @@ export function QuestionForm({
             placeholder="Contoh: /uploads/nama-file.jpg"
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Tempel URL gambar preparat (misalnya dari Virtual Microscope) atau path file yang sudah diunggah.
+            Tempel URL gambar preparat (misalnya dari Atlas Histologi) atau path file yang sudah diunggah.
           </p>
         </div>
       )}

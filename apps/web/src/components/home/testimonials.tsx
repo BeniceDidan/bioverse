@@ -7,7 +7,7 @@ const TESTIMONIALS = [
     name: "Rina",
     role: "Siswa Kelas XI IPA",
     quote:
-      "Virtual Microscope-nya bikin aku ngerti bedanya otot polos, rangka, dan jantung tanpa harus ke lab.",
+      "Atlas Histologi-nya bikin aku ngerti bedanya otot polos, rangka, dan jantung tanpa harus ke lab.",
   },
   {
     name: "Pak Dedi",
