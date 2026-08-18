@@ -2,7 +2,8 @@ import { prisma } from "../../lib/prisma";
 import { uploadBuffer, deleteByUrl } from "../../lib/storage";
 import { ApiError } from "../../utils/ApiError";
 
-type TissueType = "EPITEL" | "IKAT" | "OTOT" | "SARAF" | "LAINNYA";
+const TISSUE_TYPES = ["EPITEL", "IKAT", "OTOT", "SARAF", "LAINNYA"] as const;
+type TissueType = (typeof TISSUE_TYPES)[number];
 
 interface CreateSlideInput {
   materialSectionId: string;
@@ -92,7 +93,23 @@ export async function updateSlide(
     if (!section) throw ApiError.badRequest("Submateri tidak ditemukan");
   }
 
-  return prisma.microscopeSlide.update({ where: { id: slideId }, data });
+  if (data.tissueType && !TISSUE_TYPES.includes(data.tissueType)) {
+    throw ApiError.badRequest("Jenis jaringan tidak dikenal");
+  }
+
+  // Only these four fields, picked by name. This route has no schema in front
+  // of it, so anything spread straight into Prisma is whatever the client sent
+  // — which let a PATCH carrying teacherId hand the slide to another account
+  // and drop it out of its owner's list entirely.
+  return prisma.microscopeSlide.update({
+    where: { id: slideId },
+    data: {
+      ...(data.tissueName !== undefined && { tissueName: data.tissueName }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.materialSectionId !== undefined && { materialSectionId: data.materialSectionId }),
+      ...(data.tissueType !== undefined && { tissueType: data.tissueType }),
+    },
+  });
 }
 
 export async function setSlidePublished(slideId: string, teacherId: string, isPublished: boolean) {

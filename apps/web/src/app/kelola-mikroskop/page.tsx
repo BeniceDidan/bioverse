@@ -120,12 +120,20 @@ export default function KelolaMikroskopPage() {
       tissueName: name,
       description: desc,
       materialSectionId: sectionId,
+      tissueType: type,
     }: {
       id: string;
       tissueName: string;
       description: string;
       materialSectionId: string;
-    }) => apiClient.patch(`/api/teacher/microscope/slides/${id}`, { tissueName: name, description: desc, materialSectionId: sectionId }),
+      tissueType: string;
+    }) =>
+      apiClient.patch(`/api/teacher/microscope/slides/${id}`, {
+        tissueName: name,
+        description: desc,
+        materialSectionId: sectionId,
+        tissueType: type,
+      }),
     onSuccess: () => {
       setActionError(null);
       setEditingId(null);
@@ -138,12 +146,14 @@ export default function KelolaMikroskopPage() {
   const [editTissueName, setEditTissueName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editSectionId, setEditSectionId] = useState("");
+  const [editTissueType, setEditTissueType] = useState("LAINNYA");
 
   function startEdit(slide: MicroscopeSlideSummary) {
     setEditingId(slide.id);
     setEditTissueName(slide.tissueName);
     setEditDescription(slide.description);
     setEditSectionId(slide.materialSection.id);
+    setEditTissueType(slide.tissueType ?? "LAINNYA");
   }
 
   function handleDelete(slide: MicroscopeSlideSummary) {
@@ -387,6 +397,24 @@ export default function KelolaMikroskopPage() {
                   />
                 </div>
                 <div>
+                  {/* Editable after upload on purpose: the automatic guess reads the
+                      tissue name and can land a slide in the wrong group, and a
+                      category nobody can correct is worse than no category. */}
+                  <Label htmlFor={`edit-type-${slide.id}`}>Jenis Jaringan</Label>
+                  <select
+                    id={`edit-type-${slide.id}`}
+                    value={editTissueType}
+                    onChange={(e) => setEditTissueType(e.target.value)}
+                    className="mt-1.5 h-11 w-full rounded-lg border border-input bg-card px-3.5 text-sm text-foreground"
+                  >
+                    <option value="EPITEL">Jaringan Epitel</option>
+                    <option value="IKAT">Jaringan Ikat</option>
+                    <option value="OTOT">Jaringan Otot</option>
+                    <option value="SARAF">Jaringan Saraf</option>
+                    <option value="LAINNYA">Lainnya</option>
+                  </select>
+                </div>
+                <div>
                   <Label htmlFor={`edit-section-${slide.id}`}>Submateri Terkait</Label>
                   <select
                     id={`edit-section-${slide.id}`}
@@ -418,6 +446,7 @@ export default function KelolaMikroskopPage() {
                         tissueName: editTissueName,
                         description: editDescription,
                         materialSectionId: editSectionId,
+                        tissueType: editTissueType,
                       })
                     }
                     loading={editMutation.isPending}

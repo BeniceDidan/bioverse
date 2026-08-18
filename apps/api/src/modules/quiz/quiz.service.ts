@@ -110,7 +110,18 @@ export async function updateQuiz(
   data: Partial<{ title: string; description: string; timeLimitMinutes: number | null; passingScore: number }>
 ) {
   await getOwnedQuiz(quizId, teacherId);
-  return prisma.quiz.update({ where: { id: quizId }, data });
+  // Picked by name rather than spread: this route has no schema in front of it,
+  // so a stray isPublished or teacherId in the body would otherwise go straight
+  // through to the database.
+  return prisma.quiz.update({
+    where: { id: quizId },
+    data: {
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.timeLimitMinutes !== undefined && { timeLimitMinutes: data.timeLimitMinutes }),
+      ...(data.passingScore !== undefined && { passingScore: data.passingScore }),
+    },
+  });
 }
 
 export async function setQuizPublished(quizId: string, teacherId: string, isPublished: boolean) {

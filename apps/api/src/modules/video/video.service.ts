@@ -70,13 +70,22 @@ export async function updateVideo(
 ) {
   await getOwnedVideo(videoId, teacherId);
 
-  const { youtubeUrl, ...rest } = data;
+  const { youtubeUrl } = data;
   const youtubeId = youtubeUrl ? extractYoutubeId(youtubeUrl) : undefined;
   if (youtubeUrl && !youtubeId) throw ApiError.badRequest("Link atau ID video YouTube tidak valid");
 
+  // Fields picked by name rather than spread from the request: this route has
+  // no schema in front of it, so anything else the client sent would otherwise
+  // reach the database — including teacherId, which would move the video to
+  // another account.
   return prisma.video.update({
     where: { id: videoId },
-    data: { ...rest, ...(youtubeId ? { youtubeId } : {}) },
+    data: {
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.durationSeconds !== undefined && { durationSeconds: data.durationSeconds }),
+      ...(youtubeId ? { youtubeId } : {}),
+    },
   });
 }
 
