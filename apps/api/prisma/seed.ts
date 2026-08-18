@@ -16,6 +16,16 @@ async function main() {
   console.log("  Materi Jaringan Hewan (kontainer) siap.");
 
   // ── Akun demo ─────────────────────────────────────────────────────────
+  // Never in production. The password below is committed to a public repo and
+  // one of the two accounts is a TEACHER, so seeding a live database would hand
+  // anyone who reads this file the ability to edit real teaching material.
+  // Set ALLOW_DEMO_SEED=yes only if you genuinely want them on a live instance.
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "yes") {
+    console.log("  NODE_ENV=production — akun demo dilewati (password-nya publik di repo).");
+    console.log("Seeding selesai (hanya kontainer materi).");
+    return;
+  }
+
   const demoPasswordHash = await bcrypt.hash("Demo1234!", 12);
 
   await prisma.user.upsert({
