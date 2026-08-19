@@ -133,9 +133,11 @@ export function StudentDashboard() {
                   <p className="truncate font-medium text-foreground">{a.quizTitle}</p>
                   <p className="text-xs text-muted-foreground">{formatDate(a.submittedAt)}</p>
                 </div>
-                <Badge variant={a.passed ? "success" : "muted"}>
-                  {a.score}/{a.maxScore} ({a.percent}%)
-                </Badge>
+                {/* Out of 100, not raw points: a quiz of twelve ten-point
+                    questions rendered as "110/120", which tells a student
+                    nothing and differs from quiz to quiz. The server already
+                    sends percent. */}
+                <Badge variant={a.passed ? "success" : "muted"}>{a.percent ?? "-"} / 100</Badge>
               </div>
             ))}
             {dash.recentAttempts.length === 0 && (

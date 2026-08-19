@@ -327,17 +327,22 @@ export default function KelolaMikroskopPage() {
 
         {slides.map((slide) => (
           <Card key={slide.id}>
-            <CardContent className="flex flex-wrap items-center gap-4 p-4">
+            {/* Stacked below sm, same reason as the materi and kuis cards: the
+                action cluster is 246px and shrink-0, so at around 412px — an
+                ordinary Android width — the row still fits without wrapping and
+                squeezes the title column to 4px, spilling its badges across the
+                buttons. Measured, not guessed. */}
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:flex-wrap sm:items-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resolveFileUrl(slide.slideImageUrl)}
                 alt={slide.tissueName}
                 className="size-16 shrink-0 rounded-lg object-cover"
               />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 sm:flex-1">
                 <p className="truncate font-medium text-foreground">{slide.tissueName}</p>
                 <p className="truncate text-xs text-muted-foreground">{slide.materialSection.title}</p>
-                <div className="mt-1 flex items-center gap-2">
+                <div className="mt-1 flex flex-wrap items-center gap-2">
                   <Badge variant={slide.isPublished ? "success" : "muted"}>
                     {slide.isPublished ? <CheckCircle2 className="size-3" /> : null}
                     {slide.isPublished ? "Terbit" : "Draft"}
@@ -347,7 +352,7 @@ export default function KelolaMikroskopPage() {
                   </Badge>
                 </div>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0">
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/kelola-mikroskop/${slide.id}`}>
                     <Pencil className="size-4" /> Beri Label
