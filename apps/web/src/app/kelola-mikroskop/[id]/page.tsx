@@ -32,6 +32,7 @@ export default function AnnotateSlidePage() {
   // item and stretches to whichever column is taller, so its box stops matching
   // the picture as soon as the side panel outgrows it.
   const imageRef = useRef<HTMLImageElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
@@ -91,6 +92,23 @@ export default function AnnotateSlidePage() {
     mutationFn: () => apiClient.post(`/api/teacher/microscope/slides/${params.id}/unpublish`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher-microscope-slide", params.id] }),
   });
+
+  // Tapping a dot swaps the label list for the edit form, and in the
+  // single-column phone layout that form sits *below* the picture: measured
+  // 836px down on a 412x740 screen, so not one pixel of it was on screen. The
+  // tap looked like it did nothing — the list simply vanished. Bring the form
+  // up to just under the sticky header whenever it opens out of view. On the
+  // two-column desktop layout it is already beside the picture, so the guard
+  // below skips the scroll entirely.
+  useEffect(() => {
+    if (!pendingPos && !editingId) return;
+    const el = formRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top;
+    const headerOffset = 72;
+    if (top >= headerOffset && top <= window.innerHeight - 120) return;
+    window.scrollTo({ top: window.scrollY + top - headerOffset, behavior: "smooth" });
+  }, [pendingPos, editingId]);
 
   function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
     if (!imageRef.current) return;
@@ -221,7 +239,7 @@ export default function AnnotateSlidePage() {
 
             <div>
               {isFormOpen ? (
-                <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <div ref={formRef} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                   <div className="mb-3 flex items-center justify-between">
                     <h2 className="font-heading text-sm font-semibold text-foreground">
                       {pendingPos ? "Label Baru" : "Edit Label"}
